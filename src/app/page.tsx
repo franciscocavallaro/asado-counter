@@ -74,7 +74,7 @@ export default function Home() {
           </div>
 
           {/* Actions */}
-          <div className="flex justify-center mb-6 sm:mb-8">
+          <div className="flex justify-center">
             <AsadoForm 
               cuts={cuts} 
               guests={guests} 
@@ -91,7 +91,7 @@ export default function Home() {
       </div>
 
       {/* Content */}
-      <div className="container max-w-5xl mx-auto px-4 pb-12 sm:pb-16">
+      <div className="container max-w-5xl mx-auto px-4 pb-12">
         {loading ? (
           <div className="text-center py-12 sm:py-16">
             <p className="text-muted-foreground">Cargando asados...</p>

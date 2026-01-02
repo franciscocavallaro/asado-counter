@@ -34,6 +34,16 @@ export function GuestCombobox({
 }: GuestComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+
+  // Scroll into view when popover opens (for mobile keyboard)
+  React.useEffect(() => {
+    if (open && triggerRef.current) {
+      setTimeout(() => {
+        triggerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [open]);
 
   const filteredGuests = guests.filter((guest) =>
     guest.name.toLowerCase().includes(inputValue.toLowerCase())
@@ -61,6 +71,7 @@ export function GuestCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}
