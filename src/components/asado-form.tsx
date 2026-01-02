@@ -195,21 +195,19 @@ export function AsadoForm({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2" size="lg">
-          <Flame className="h-5 w-5" />
-          Nuevo Asado
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-3 sm:p-6">
-        <DialogHeader className="pr-6 sm:pr-0">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-2xl max-h-[85dvh] sm:max-h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 flex-shrink-0 border-b">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg pr-6">
             <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 shrink-0" />
-            <span className="break-words">Registrar Nuevo Asado</span>
+            <span className="break-words">
+              {isEditMode ? "Editar Asado" : "Registrar Nuevo Asado"}
+            </span>
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 pt-2 sm:pt-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-6 sm:space-y-8">
           {/* Title */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label className="text-sm sm:text-base">Título (opcional)</Label>
@@ -368,10 +366,14 @@ export function AsadoForm({
             </div>
           </div>
 
-          {/* Submit Button */}
-          <Button type="submit" className="w-full h-10 sm:h-11 text-sm sm:text-base" disabled={loading}>
-            {loading ? "Guardando..." : "Guardar Asado"}
-          </Button>
+          </div>
+
+          {/* Submit Button - Fixed at bottom */}
+          <div className="flex-shrink-0 px-3 sm:px-6 py-3 sm:py-4 border-t bg-background">
+            <Button type="submit" className="w-full h-10 sm:h-11 text-sm sm:text-base" disabled={loading}>
+              {loading ? "Guardando..." : isEditMode ? "Actualizar Asado" : "Guardar Asado"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

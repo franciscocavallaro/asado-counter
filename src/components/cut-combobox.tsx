@@ -34,16 +34,6 @@ export function CutCombobox({
 }: CutComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
-  const triggerRef = React.useRef<HTMLButtonElement>(null);
-
-  // Scroll into view when popover opens (for mobile keyboard)
-  React.useEffect(() => {
-    if (open && triggerRef.current) {
-      setTimeout(() => {
-        triggerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 100);
-    }
-  }, [open]);
 
   const filteredCuts = cuts.filter((cut) =>
     cut.name.toLowerCase().includes(inputValue.toLowerCase())
@@ -71,7 +61,6 @@ export function CutCombobox({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          ref={triggerRef}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -81,7 +70,14 @@ export function CutCombobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[calc(100vw-3rem)] sm:w-[300px] p-0" align="start">
+      <PopoverContent 
+        className="w-[calc(100vw-3rem)] sm:w-[300px] p-0" 
+        align="start"
+        side="top"
+        sideOffset={8}
+        avoidCollisions={true}
+        collisionPadding={16}
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Buscar o agregar corte..."
