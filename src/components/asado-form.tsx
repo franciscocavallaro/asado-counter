@@ -24,34 +24,89 @@ import {
 } from "@/components/ui/dialog";
 import { CutCombobox } from "./cut-combobox";
 import { GuestCombobox } from "./guest-combobox";
-import type { Cut, Guest, CutInput, GuestInput } from "@/lib/types";
-import { createAsado } from "@/lib/actions";
+import type { Cut, Guest, CutInput, GuestInput, AsadoWithRelations } from "@/lib/types";
+import { createAsado, updateAsado } from "@/lib/actions";
 
 interface AsadoFormProps {
   cuts: Cut[];
   guests: Guest[];
   onSuccess: () => void;
+  asado?: AsadoWithRelations | null;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-export function AsadoForm({ cuts, guests, onSuccess }: AsadoFormProps) {
-  const [open, setOpen] = React.useState(false);
+export function AsadoForm({ 
+  cuts, 
+  guests, 
+  onSuccess, 
+  asado,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  trigger
+}: AsadoFormProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
-  const [date, setDate] = React.useState<Date | undefined>(new Date());
-  const [title, setTitle] = React.useState("");
-  const [rating, setRating] = React.useState(7);
-  const [cutInputs, setCutInputs] = React.useState<CutInput[]>([
-    { name: "", weight_kg: 0 },
-  ]);
-  const [guestInputs, setGuestInputs] = React.useState<GuestInput[]>([
-    { name: "" },
-  ]);
+  
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? controlledOnOpenChange || (() => {}) : setInternalOpen;
+  const isEditMode = !!asado;
+
+  // Initialize form with asado data if editing
+  React.useEffect(() => {
+    if (asado && open) {
+      setDate(new Date(asado.date));
+      setTitle(asado.title || "");
+      setRating(asado.rating);
+      setCutInputs(
+        asado.asado_cuts.length > 0
+          ? asado.asado_cuts.map((ac) => ({
+              name: ac.cut.name,
+              weight_kg: Number(ac.weight_kg),
+            }))
+          : [{ name: "", weight_kg: 0 }]
+      );
+      setGuestInputs(
+        asado.asado_guests.length > 0
+          ? asado.asado_guests.map((ag) => ({
+              name: ag.guest.name,
+            }))
+          : [{ name: "" }]
+      );
+    }
+  }, [asado, open]);
+
+  const [date, setDate] = React.useState<Date | undefined>(
+    asado ? new Date(asado.date) : new Date()
+  );
+  const [title, setTitle] = React.useState(asado?.title || "");
+  const [rating, setRating] = React.useState(asado?.rating || 7);
+  const [cutInputs, setCutInputs] = React.useState<CutInput[]>(
+    asado && asado.asado_cuts.length > 0
+      ? asado.asado_cuts.map((ac) => ({
+          name: ac.cut.name,
+          weight_kg: Number(ac.weight_kg),
+        }))
+      : [{ name: "", weight_kg: 0 }]
+  );
+  const [guestInputs, setGuestInputs] = React.useState<GuestInput[]>(
+    asado && asado.asado_guests.length > 0
+      ? asado.asado_guests.map((ag) => ({
+          name: ag.guest.name,
+        }))
+      : [{ name: "" }]
+  );
 
   const resetForm = () => {
-    setDate(new Date());
-    setTitle("");
-    setRating(7);
-    setCutInputs([{ name: "", weight_kg: 0 }]);
-    setGuestInputs([{ name: "" }]);
+    if (!asado) {
+      setDate(new Date());
+      setTitle("");
+      setRating(7);
+      setCutInputs([{ name: "", weight_kg: 0 }]);
+      setGuestInputs([{ name: "" }]);
+    }
   };
 
   const handleAddCut = () => {
@@ -110,19 +165,29 @@ export function AsadoForm({ cuts, guests, onSuccess }: AsadoFormProps) {
 
     setLoading(true);
     try {
-      await createAsado({
-        date,
-        title: title.trim() || undefined,
-        rating,
-        cuts: validCuts,
-        guests: validGuests,
-      });
+      if (isEditMode && asado) {
+        await updateAsado(asado.id, {
+          date,
+          title: title.trim() || undefined,
+          rating,
+          cuts: validCuts,
+          guests: validGuests,
+        });
+      } else {
+        await createAsado({
+          date,
+          title: title.trim() || undefined,
+          rating,
+          cuts: validCuts,
+          guests: validGuests,
+        });
+      }
       resetForm();
       setOpen(false);
       onSuccess();
     } catch (error) {
-      console.error("Error creating asado:", error);
-      alert("Error al crear el asado");
+      console.error(`Error ${isEditMode ? "updating" : "creating"} asado:`, error);
+      alert(`Error al ${isEditMode ? "actualizar" : "crear"} el asado`);
     } finally {
       setLoading(false);
     }
@@ -144,7 +209,7 @@ export function AsadoForm({ cuts, guests, onSuccess }: AsadoFormProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 pt-2 sm:pt-4">
+        <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 pt-2 sm:pt-4">
           {/* Title */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label className="text-sm sm:text-base">Título (opcional)</Label>
@@ -159,7 +224,7 @@ export function AsadoForm({ cuts, guests, onSuccess }: AsadoFormProps) {
           </div>
 
           {/* Date and Rating Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-4">
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="text-sm sm:text-base">Fecha</Label>
               <Popover>

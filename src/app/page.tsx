@@ -75,7 +75,17 @@ export default function Home() {
 
           {/* Actions */}
           <div className="flex justify-center mb-6 sm:mb-8">
-            <AsadoForm cuts={cuts} guests={guests} onSuccess={handleRefresh} />
+            <AsadoForm 
+              cuts={cuts} 
+              guests={guests} 
+              onSuccess={handleRefresh}
+              trigger={
+                <Button className="gap-2" size="lg">
+                  <Flame className="h-5 w-5" />
+                  Nuevo Asado
+                </Button>
+              }
+            />
           </div>
         </div>
       </div>
@@ -87,7 +97,7 @@ export default function Home() {
             <p className="text-muted-foreground">Cargando asados...</p>
           </div>
         ) : (
-          <AsadoList asados={asados} onRefresh={handleRefresh} />
+          <AsadoList asados={asados} cuts={cuts} guests={guests} onRefresh={handleRefresh} />
         )}
       </div>
     </main>

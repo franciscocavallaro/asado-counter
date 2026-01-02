@@ -15,16 +15,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { AsadoWithRelations } from "@/lib/types";
+import { AsadoForm } from "@/components/asado-form";
+import type { AsadoWithRelations, Cut, Guest } from "@/lib/types";
 import { deleteAsado } from "@/lib/actions";
 
 interface AsadoCardProps {
   asado: AsadoWithRelations;
+  cuts: Cut[];
+  guests: Guest[];
   onDelete: () => void;
+  onUpdate: () => void;
 }
 
-export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
+export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCardProps) {
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
   const totalWeight = asado.asado_cuts.reduce(
@@ -32,7 +37,12 @@ export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
     0
   );
 
-  const handleDeleteClick = () => {
+  const handleCardClick = () => {
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setDeleteDialogOpen(true);
   };
 
@@ -51,7 +61,11 @@ export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
   };
 
   return (
-    <Card className="group relative overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] border-border/50 bg-card/80 backdrop-blur-sm">
+    <>
+      <Card 
+        className="group relative overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] border-border/50 bg-card/80 backdrop-blur-sm cursor-pointer"
+        onClick={handleCardClick}
+      >
       <CardHeader className="pb-3 px-4 sm:px-6">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
@@ -79,7 +93,7 @@ export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
               variant="ghost"
               size="icon"
               onClick={handleDeleteClick}
-              className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8"
+              className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8 z-10"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -135,6 +149,7 @@ export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
           </div>
         )}
       </CardContent>
+      </Card>
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -173,7 +188,20 @@ export function AsadoCard({ asado, onDelete }: AsadoCardProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </Card>
+
+      {/* Edit Dialog */}
+      <AsadoForm
+        cuts={cuts}
+        guests={guests}
+        asado={asado}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={() => {
+          setEditDialogOpen(false);
+          onUpdate();
+        }}
+      />
+    </>
   );
 }
 

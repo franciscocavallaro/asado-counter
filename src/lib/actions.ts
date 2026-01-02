@@ -142,6 +142,62 @@ export async function createAsado(formData: AsadoFormData): Promise<Asado> {
   return asado;
 }
 
+// Update an asado
+export async function updateAsado(
+  id: string,
+  formData: AsadoFormData
+): Promise<Asado> {
+  // Update the asado
+  const { data: asado, error: asadoError } = await supabase
+    .from("asados")
+    .update({
+      date: formData.date.toISOString().split("T")[0],
+      title: formData.title?.trim() || null,
+      rating: formData.rating,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (asadoError) throw asadoError;
+
+  // Delete existing cuts and guests
+  const { error: deleteCutsError } = await supabase
+    .from("asado_cuts")
+    .delete()
+    .eq("asado_id", id);
+  if (deleteCutsError) throw deleteCutsError;
+
+  const { error: deleteGuestsError } = await supabase
+    .from("asado_guests")
+    .delete()
+    .eq("asado_id", id);
+  if (deleteGuestsError) throw deleteGuestsError;
+
+  // Process cuts
+  for (const cutInput of formData.cuts) {
+    const cut = await getOrCreateCut(cutInput.name);
+    const { error } = await supabase.from("asado_cuts").insert({
+      asado_id: asado.id,
+      cut_id: cut.id,
+      weight_kg: cutInput.weight_kg,
+    });
+    if (error) throw error;
+  }
+
+  // Process guests
+  for (const guestInput of formData.guests) {
+    const guest = await getOrCreateGuest(guestInput.name);
+    const { error } = await supabase.from("asado_guests").insert({
+      asado_id: asado.id,
+      guest_id: guest.id,
+    });
+    if (error) throw error;
+  }
+
+  return asado;
+}
+
 // Delete an asado
 export async function deleteAsado(id: string): Promise<void> {
   const { error } = await supabase.from("asados").delete().eq("id", id);
