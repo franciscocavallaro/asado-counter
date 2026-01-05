@@ -75,12 +75,12 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
                   {asado.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground font-mono">
-                  {format(new Date(asado.date), "d 'de' MMM, yyyy", { locale: es })}
+                  {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
                 </p>
               </>
             ) : (
               <p className="text-base sm:text-lg font-semibold font-mono">
-                {format(new Date(asado.date), "d 'de' MMM, yyyy", { locale: es })}
+                {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
               </p>
             )}
           </div>

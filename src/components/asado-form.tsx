@@ -57,7 +57,7 @@ export function AsadoForm({
   // Initialize form with asado data if editing
   React.useEffect(() => {
     if (asado && open) {
-      setDate(new Date(asado.date));
+      setDate(new Date(asado.date + 'T12:00:00'));
       setTitle(asado.title || "");
       setRating(asado.rating);
       setCutInputs(
@@ -79,7 +79,7 @@ export function AsadoForm({
   }, [asado, open]);
 
   const [date, setDate] = React.useState<Date | undefined>(
-    asado ? new Date(asado.date) : new Date()
+    asado ? new Date(asado.date + 'T12:00:00') : new Date()
   );
   const [title, setTitle] = React.useState(asado?.title || "");
   const [rating, setRating] = React.useState(asado?.rating || 7);

@@ -4,3 +4,4 @@
 ALTER TABLE asados 
 ADD COLUMN IF NOT EXISTS title TEXT;
 
+
