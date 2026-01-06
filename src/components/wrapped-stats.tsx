@@ -4,6 +4,7 @@ import { Flame, Beef, Users, Star, Trophy, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { WrappedStats } from "@/lib/types";
+import { truncateTo1Decimal } from "@/lib/utils";
 
 interface WrappedStatsDisplayProps {
   stats: WrappedStats;
@@ -128,7 +129,7 @@ export function WrappedStatsDisplay({ stats, year }: WrappedStatsDisplayProps) {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm sm:text-base truncate">{cut.name}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        {cut.count} {cut.count === 1 ? "vez" : "veces"} · {cut.totalKg.toFixed(1)} kg
+                        {cut.count} {cut.count === 1 ? "vez" : "veces"} · {truncateTo1Decimal(cut.totalKg)} kg
                       </p>
                     </div>
                   </div>

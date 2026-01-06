@@ -18,6 +18,7 @@ import {
 import { AsadoForm } from "@/components/asado-form";
 import type { AsadoWithRelations, Cut, Guest } from "@/lib/types";
 import { deleteAsado } from "@/lib/actions";
+import { truncateTo1Decimal } from "@/lib/utils";
 
 interface AsadoCardProps {
   asado: AsadoWithRelations;
@@ -105,7 +106,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
             <Beef className="h-4 w-4" />
             <span>
-              Cortes ({totalWeight.toFixed(1)} kg total)
+              Cortes ({truncateTo1Decimal(totalWeight)} kg total)
             </span>
           </div>
           <div className="flex flex-wrap gap-1 sm:gap-1.5">
@@ -117,7 +118,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
               >
                 {ac.cut.name}{" "}
                 <span className="ml-1 font-mono text-xs opacity-70">
-                  {Number(ac.weight_kg).toFixed(1)}kg
+                  {truncateTo1Decimal(Number(ac.weight_kg))}kg
                 </span>
               </Badge>
             ))}
