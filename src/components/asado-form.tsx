@@ -60,14 +60,21 @@ export function AsadoForm({
       setDate(new Date(asado.date + 'T12:00:00'));
       setTitle(asado.title || "");
       setRating(asado.rating);
-      setCutInputs(
-        asado.asado_cuts.length > 0
-          ? asado.asado_cuts.map((ac) => ({
-              name: ac.cut.name,
-              weight_kg: Number(ac.weight_kg),
-            }))
-          : [{ name: "", weight_kg: 0 }]
-      );
+      const cuts = asado.asado_cuts.length > 0
+        ? asado.asado_cuts.map((ac) => ({
+            name: ac.cut.name,
+            weight_kg: Number(ac.weight_kg),
+          }))
+        : [{ name: "", weight_kg: 0 }];
+      setCutInputs(cuts);
+      // Inicializar los valores de entrada de peso con comas
+      const weightInputsMap: Record<number, string> = {};
+      cuts.forEach((cut, index) => {
+        if (cut.weight_kg > 0) {
+          weightInputsMap[index] = cut.weight_kg.toString().replace(".", ",");
+        }
+      });
+      setWeightInputs(weightInputsMap);
       setGuestInputs(
         asado.asado_guests.length > 0
           ? asado.asado_guests.map((ag) => ({
@@ -91,6 +98,8 @@ export function AsadoForm({
         }))
       : [{ name: "", weight_kg: 0 }]
   );
+  const [weightInputs, setWeightInputs] = React.useState<Record<number, string>>({});
+  
   const [guestInputs, setGuestInputs] = React.useState<GuestInput[]>(
     asado && asado.asado_guests.length > 0
       ? asado.asado_guests.map((ag) => ({
@@ -105,6 +114,7 @@ export function AsadoForm({
       setTitle("");
       setRating(7);
       setCutInputs([{ name: "", weight_kg: 0 }]);
+      setWeightInputs({});
       setGuestInputs([{ name: "" }]);
     }
   };
@@ -116,6 +126,18 @@ export function AsadoForm({
   const handleRemoveCut = (index: number) => {
     if (cutInputs.length > 1) {
       setCutInputs(cutInputs.filter((_, i) => i !== index));
+      setWeightInputs(prev => {
+        const newState: Record<number, string> = {};
+        Object.keys(prev).forEach(key => {
+          const oldIndex = Number(key);
+          if (oldIndex < index) {
+            newState[oldIndex] = prev[oldIndex];
+          } else if (oldIndex > index) {
+            newState[oldIndex - 1] = prev[oldIndex];
+          }
+        });
+        return newState;
+      });
     }
   };
 
@@ -294,18 +316,51 @@ export function AsadoForm({
                   </div>
                   <div className="w-20 sm:w-24 shrink-0">
                     <Input
-                      type="number"
-                      step="0.1"
-                      min="0"
+                      type="text"
+                      inputMode="decimal"
                       placeholder="Kg"
-                      value={cut.weight_kg || ""}
-                      onChange={(e) =>
-                        handleCutChange(
-                          index,
-                          "weight_kg",
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
+                      value={weightInputs[index] ?? (cut.weight_kg > 0 ? cut.weight_kg.toString().replace(".", ",") : "")}
+                      onChange={(e) => {
+                        const inputValue = e.target.value;
+                        // Permitir vacío, números positivos, y números positivos con coma o punto (sin negativos)
+                        if (inputValue === "" || /^[0-9]+([,\.][0-9]*)?$/.test(inputValue) || /^[0-9]*[,\.]?$/.test(inputValue)) {
+                          // Actualizar el estado local del input
+                          setWeightInputs(prev => ({ ...prev, [index]: inputValue }));
+                          // Convertir coma a punto para parsear y guardar en el estado numérico
+                          const normalizedValue = inputValue.replace(",", ".");
+                          // Si el valor termina en coma o punto, no parsear aún (usuario está escribiendo)
+                          if (!inputValue.endsWith(",") && !inputValue.endsWith(".") && inputValue !== "") {
+                            const parsedValue = parseFloat(normalizedValue);
+                            if (!isNaN(parsedValue) && parsedValue >= 0) {
+                              handleCutChange(index, "weight_kg", parsedValue);
+                            }
+                          } else if (inputValue === "") {
+                            handleCutChange(index, "weight_kg", 0);
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        // Al perder el foco, asegurar que el valor esté parseado correctamente
+                        const inputValue = e.target.value;
+                        if (inputValue !== "") {
+                          const normalizedValue = inputValue.replace(",", ".");
+                          const parsedValue = parseFloat(normalizedValue);
+                          // Validar que sea un número válido y no negativo
+                          if (!isNaN(parsedValue) && parsedValue >= 0) {
+                            handleCutChange(index, "weight_kg", parsedValue);
+                            // Actualizar el input para mostrar el valor formateado
+                            setWeightInputs(prev => ({ ...prev, [index]: parsedValue.toString().replace(".", ",") }));
+                          } else {
+                            // Si no es válido o es negativo, limpiar
+                            handleCutChange(index, "weight_kg", 0);
+                            setWeightInputs(prev => {
+                              const newState = { ...prev };
+                              delete newState[index];
+                              return newState;
+                            });
+                          }
+                        }
+                      }}
                       className="text-sm sm:text-base"
                     />
                   </div>

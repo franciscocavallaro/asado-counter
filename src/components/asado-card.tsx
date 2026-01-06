@@ -66,12 +66,12 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
         className="group relative overflow-hidden transition-all hover:shadow-lg active:scale-[0.98] border-border/50 bg-card/80 backdrop-blur-sm cursor-pointer"
         onClick={handleCardClick}
       >
-      <CardHeader className="pb-3 px-4 sm:px-6">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
+      <CardHeader className="px-4 sm:px-6">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0 flex flex-col gap-2">
             {asado.title ? (
               <>
-                <h3 className="text-base sm:text-lg font-semibold truncate mb-1">
+                <h3 className="text-base sm:text-lg font-semibold truncate">
                   {asado.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground font-mono">
@@ -79,25 +79,23 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
                 </p>
               </>
             ) : (
-              <p className="text-base sm:text-lg font-semibold font-mono">
+              <p className="text-base sm:text-lg font-semibold font-mono mb-2">
                 {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
               </p>
             )}
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <div className="flex items-center gap-1 bg-amber-500/20 text-amber-500 px-2 py-1 rounded-md">
+            <div className="flex items-center gap-1 bg-amber-500/20 text-amber-500 px-2 py-1 rounded-md w-fit">
               <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
               <span className="font-mono font-bold text-sm sm:text-base">{asado.rating}</span>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleDeleteClick}
-              className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8 z-10"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleDeleteClick}
+            className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive h-8 w-8 z-10 shrink-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
 
