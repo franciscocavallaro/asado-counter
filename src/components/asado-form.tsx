@@ -18,6 +18,7 @@ import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -273,7 +274,10 @@ export function AsadoForm({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-2xl max-h-[85dvh] sm:max-h-[90vh] p-0 flex flex-col overflow-hidden">
+      <DialogContent 
+        className="max-w-2xl max-h-[85dvh] sm:max-h-[90vh] p-0 flex flex-col overflow-hidden"
+        aria-describedby="asado-form-description"
+      >
         <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 flex-shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg pr-6">
             <Flame className="h-4 w-4 sm:h-5 sm:w-5 text-orange-500 shrink-0" />
@@ -282,6 +286,9 @@ export function AsadoForm({
             </span>
           </DialogTitle>
         </DialogHeader>
+        <DialogDescription id="asado-form-description" className="sr-only">
+          {isEditMode ? "Editar los detalles del asado" : "Registrar un nuevo asado con cortes, invitados y detalles"}
+        </DialogDescription>
 
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 sm:px-6 py-4 space-y-6 sm:space-y-8">
