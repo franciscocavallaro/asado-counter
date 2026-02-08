@@ -22,28 +22,10 @@ export function BarcodeScanner({
   onClose,
   open,
 }: BarcodeScannerProps) {
-  const [isScanning, setIsScanning] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const scannerInstanceRef = React.useRef<any>(null);
-  const Html5QrcodeClassRef = React.useRef<any>(null);
-
-  const stopScanning = React.useCallback(async () => {
-    if (scannerInstanceRef.current) {
-      try {
-        await scannerInstanceRef.current.stop();
-        await scannerInstanceRef.current.clear();
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
-      }
-      scannerInstanceRef.current = null;
-    }
-    setIsScanning(false);
-  }, []);
+  const [isScanning, setIsScanning] = React.useState(false);
 
   const handleScanSuccess = React.useCallback((barcode: string) => {
-    // Detener el escáner
-    stopScanning();
-    
     // Llamar al callback con el código escaneado
     onScan(barcode);
     
@@ -51,92 +33,31 @@ export function BarcodeScanner({
     setTimeout(() => {
       onClose();
     }, 100);
-  }, [onScan, onClose, stopScanning]);
+  }, [onScan, onClose]);
 
-  const startScanning = React.useCallback(async (Html5Qrcode: any) => {
-    try {
-      setError(null);
-      setIsScanning(true);
-
-      const scanner = new Html5Qrcode("barcode-scanner-container");
-      scannerInstanceRef.current = scanner;
-      
-      // Detectar si es móvil y específicamente Safari iOS
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const isSafariIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) && 
-                         /Safari/i.test(navigator.userAgent) && 
-                         !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent);
-      
-      // Configuración para móviles (especialmente Safari iOS)
-      // Safari iOS es más estricto, así que usamos configuración mínima
-      const config = isSafariIOS
-        ? {
-            // Configuración mínima para Safari iOS
-            facingMode: { ideal: "environment" },
-          }
-        : isMobile
-        ? {
-            // Para otros móviles
-            facingMode: "environment",
-            aspectRatio: { ideal: 1.7777777778 }, // 16:9
-          }
-        : {
-            // Para desktop
-            facingMode: "environment",
-          };
-
-      // Configuración del scanner optimizada para móviles
-      const scannerConfig = {
-        fps: isMobile ? 5 : 10, // Menos fps en móviles para mejor rendimiento
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          // Usar un tamaño relativo en móviles
-          const minEdgePercentage = isMobile ? 0.7 : 0.3;
-          const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-          const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-          return {
-            width: qrboxSize,
-            height: qrboxSize,
-          };
-        },
-        aspectRatio: 1.0,
-        disableFlip: false, // Permitir rotación en móviles
-      };
-      
-      await scanner.start(
-        config,
-        scannerConfig,
-        (decodedText: string) => {
-          // Código escaneado exitosamente
-          handleScanSuccess(decodedText);
-        },
-        (errorMessage: string) => {
-          // Ignorar errores de decodificación (es normal mientras busca)
-        }
-      );
-    } catch (err: any) {
-      console.error("Error starting scanner:", err);
-      
-      let errorMessage = "Error al iniciar el escáner.";
-      
-      if (err.message?.includes("Permission denied") || err.message?.includes("NotAllowedError")) {
-        errorMessage = "Permiso de cámara denegado. Por favor, permití el acceso a la cámara en la configuración del navegador.";
-      } else if (err.message?.includes("Camera streaming not supported") || err.message?.includes("NotReadableError")) {
-        errorMessage = "La cámara no está disponible o está siendo usada por otra aplicación. Cerrala y volvé a intentar.";
-      } else if (err.message?.includes("NotFoundError") || err.message?.includes("no camera")) {
-        errorMessage = "No se encontró ninguna cámara disponible en este dispositivo.";
-      } else {
-        errorMessage = `Error: ${err.message || "No se pudo iniciar la cámara. Asegurate de estar usando HTTPS o localhost."}`;
-      }
-      
-      setError(errorMessage);
-      setIsScanning(false);
-      scannerInstanceRef.current = null;
+  const handleError = React.useCallback((err: any) => {
+    console.error("Scanner error:", err);
+    
+    let errorMessage = "Error al iniciar el escáner.";
+    
+    if (err?.message?.includes("Permission denied") || err?.message?.includes("NotAllowedError")) {
+      errorMessage = "Permiso de cámara denegado. Por favor, permití el acceso a la cámara en la configuración del navegador.";
+    } else if (err?.message?.includes("Camera streaming not supported") || err?.message?.includes("NotReadableError")) {
+      errorMessage = "La cámara no está disponible o está siendo usada por otra aplicación. Cerrala y volvé a intentar.";
+    } else if (err?.message?.includes("NotFoundError") || err?.message?.includes("no camera")) {
+      errorMessage = "No se encontró ninguna cámara disponible en este dispositivo.";
+    } else {
+      errorMessage = `Error: ${err?.message || "No se pudo iniciar la cámara. Asegurate de estar usando HTTPS o localhost."}`;
     }
-  }, [handleScanSuccess]);
+    
+    setError(errorMessage);
+    setIsScanning(false);
+  }, []);
 
   React.useEffect(() => {
     if (!open) {
-      stopScanning();
+      setIsScanning(false);
+      setError(null);
       return;
     }
 
@@ -146,67 +67,27 @@ export function BarcodeScanner({
       return;
     }
 
-    // Cargar html5-qrcode dinámicamente
-    const loadScanner = async () => {
-      try {
-        // Verificar que estamos en HTTPS o localhost (requerido para acceso a cámara)
-        const isSecureContext = window.isSecureContext || 
-          window.location.protocol === 'https:' || 
-          window.location.hostname === 'localhost' || 
-          window.location.hostname === '127.0.0.1';
-        
-        if (!isSecureContext) {
-          setError("El acceso a la cámara requiere HTTPS. Por favor, usá una conexión segura.");
-          return;
-        }
+    // Verificar que estamos en HTTPS o localhost (requerido para acceso a cámara)
+    const isSecureContext = window.isSecureContext || 
+      window.location.protocol === 'https:' || 
+      window.location.hostname === 'localhost' || 
+      window.location.hostname === '127.0.0.1';
+    
+    if (!isSecureContext) {
+      setError("El acceso a la cámara requiere HTTPS. Por favor, usá una conexión segura.");
+      return;
+    }
 
-        // Verificar que el navegador soporte getUserMedia
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setError("Tu navegador no soporta el acceso a la cámara. Probá con Safari, Chrome o Firefox.");
-          return;
-        }
-
-        // @ts-ignore - html5-qrcode se carga dinámicamente
-        const html5QrcodeModule = await import("html5-qrcode").catch((importError) => {
-          // Si falla la importación, intentar con una ruta alternativa
-          console.error("Error importing html5-qrcode:", importError);
-          throw importError;
-        });
-        
-        if (!html5QrcodeModule || !html5QrcodeModule.Html5Qrcode) {
-          throw new Error("html5-qrcode module is not available");
-        }
-        
-        const Html5Qrcode = html5QrcodeModule.Html5Qrcode;
-        Html5QrcodeClassRef.current = Html5Qrcode;
-        startScanning(Html5Qrcode);
-      } catch (err: any) {
-        console.error("Error loading scanner:", err);
-        
-        // Detectar el tipo de error
-        let errorMessage = "No se pudo cargar el escáner.";
-        
-        if (err?.message?.includes("Cannot find module") || err?.code === "MODULE_NOT_FOUND") {
-          errorMessage = "El paquete html5-qrcode no está instalado. Ejecutá: npm install html5-qrcode";
-        } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("network")) {
-          errorMessage = "Error de red al cargar el escáner. Verificá tu conexión e intentá de nuevo.";
-        } else {
-          errorMessage = `Error al cargar el escáner: ${err?.message || "Error desconocido"}`;
-        }
-        
-        setError(errorMessage);
-      }
-    };
-
-    loadScanner();
-
-    return () => {
-      stopScanning();
-    };
-  }, [open, startScanning, stopScanning]);
+    // Verificar que el navegador soporte getUserMedia
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setError("Tu navegador no soporta el acceso a la cámara. Probá con Safari, Chrome o Firefox.");
+      return;
+    }
+  }, [open]);
 
   const handleClose = () => {
-    stopScanning();
+    setIsScanning(false);
+    setError(null);
     onClose();
   };
 
@@ -233,7 +114,6 @@ export function BarcodeScanner({
           ) : (
             <div className="space-y-4">
               <div
-                id="barcode-scanner-container"
                 className={cn(
                   "w-full rounded-lg overflow-hidden bg-black",
                   "min-h-[300px] max-h-[60vh]",
@@ -243,8 +123,15 @@ export function BarcodeScanner({
                   position: "relative",
                 }}
               >
+                {open && (
+                  <QrBarcodeScannerComponent
+                    onScan={handleScanSuccess}
+                    onError={handleError}
+                    setIsScanning={setIsScanning}
+                  />
+                )}
                 {!isScanning && (
-                  <div className="text-white text-center p-4 absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="text-white text-center p-4 absolute inset-0 flex flex-col items-center justify-center z-10">
                     <Camera className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p className="text-sm">Iniciando cámara...</p>
                   </div>
@@ -270,5 +157,144 @@ export function BarcodeScanner({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Componente interno que carga react-qr-barcode-scanner dinámicamente
+function QrBarcodeScannerComponent({
+  onScan,
+  onError,
+  setIsScanning,
+}: {
+  onScan: (barcode: string) => void;
+  onError: (err: any) => void;
+  setIsScanning: (scanning: boolean) => void;
+}) {
+  const [ScannerComponent, setScannerComponent] = React.useState<any>(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    let mounted = true;
+
+    const loadComponent = async () => {
+      try {
+        // Cargar react-qr-barcode-scanner dinámicamente
+        // @ts-ignore
+        const module = await import("react-qr-barcode-scanner");
+        
+        // Intentar diferentes formas de exportación comunes
+        const Component = module.default || 
+                         module.QrBarcodeScanner || 
+                         module.Scanner ||
+                         module.BarcodeScanner ||
+                         module.QRScanner;
+        
+        if (mounted) {
+          if (Component) {
+            setScannerComponent(() => Component);
+            setIsScanning(true);
+          } else {
+            throw new Error("No se encontró el componente Scanner en react-qr-barcode-scanner");
+          }
+        }
+      } catch (err: any) {
+        console.error("Error loading react-qr-barcode-scanner:", err);
+        if (mounted) {
+          let errorMessage = "No se pudo cargar el escáner.";
+          
+          if (err?.message?.includes("Cannot find module") || err?.code === "MODULE_NOT_FOUND") {
+            errorMessage = "El paquete react-qr-barcode-scanner no está instalado. Ejecutá: npm install react-qr-barcode-scanner";
+          } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("network")) {
+            errorMessage = "Error de red al cargar el escáner. Verificá tu conexión e intentá de nuevo.";
+          } else {
+            errorMessage = `Error al cargar el escáner: ${err?.message || "Error desconocido"}`;
+          }
+          
+          onError(new Error(errorMessage));
+        }
+      }
+    };
+
+    loadComponent();
+
+    return () => {
+      mounted = false;
+    };
+  }, [onError, setIsScanning]);
+
+  // Detectar si es móvil y específicamente Safari iOS
+  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isSafariIOS = typeof window !== 'undefined' && 
+    /iPhone|iPad|iPod/i.test(navigator.userAgent) && 
+    /Safari/i.test(navigator.userAgent) && 
+    !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent);
+
+  // Configuración de la cámara
+  const constraints = isSafariIOS
+    ? {
+        facingMode: { ideal: "environment" },
+      }
+    : isMobile
+    ? {
+        facingMode: "environment",
+        aspectRatio: { ideal: 1.7777777778 }, // 16:9
+      }
+    : {
+        facingMode: "environment",
+      };
+
+  if (!ScannerComponent) {
+    return null;
+  }
+
+  // Intentar diferentes APIs comunes de librerías React para escaneo
+  // Ajustar según la documentación real de react-qr-barcode-scanner
+  const handleScanResult = React.useCallback((result: any) => {
+    const text = result?.getText?.() || result?.text || result || (typeof result === 'string' ? result : null);
+    if (text) {
+      onScan(text);
+    }
+  }, [onScan]);
+
+  const handleScannerError = React.useCallback((err: any) => {
+    // Solo reportar errores críticos, no errores de decodificación
+    if (err?.message && !err.message.includes("No QR code")) {
+      onError(err);
+    }
+  }, [onError]);
+
+  const scannerProps: any = {
+    // Opción 1: API con onUpdate (común en algunas librerías)
+    onUpdate: (err: any, result: any) => {
+      if (err) {
+        // Ignorar errores de decodificación (es normal mientras busca)
+        return;
+      }
+      if (result) {
+        handleScanResult(result);
+      }
+    },
+    // Opción 2: API con onScan (más directo)
+    onScan: handleScanResult,
+    // Opción 3: API con onDetected
+    onDetected: handleScanResult,
+    // Manejo de errores
+    onError: handleScannerError,
+    // Configuración de cámara
+    constraints: constraints,
+    // Estilo
+    style: {
+      width: "100%",
+      height: "100%",
+    },
+    // Configuración adicional común
+    delay: isMobile ? 300 : 100,
+    facingMode: "environment",
+  };
+
+  return (
+    <div ref={containerRef} className="w-full h-full">
+      <ScannerComponent {...scannerProps} />
+    </div>
   );
 }
