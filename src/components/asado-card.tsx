@@ -80,7 +80,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
                 </p>
               </>
             ) : (
-              <p className="text-base sm:text-lg font-semibold font-mono mb-2">
+              <p className="text-base sm:text-lg font-semibold font-mono">
                 {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
               </p>
             )}
