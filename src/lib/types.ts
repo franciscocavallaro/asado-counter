@@ -55,7 +55,7 @@ export interface GuestInput {
 }
 
 export interface AsadoFormData {
-  date: Date;
+  date: string; // ISO string format
   title?: string;
   rating: number;
   cuts: CutInput[];

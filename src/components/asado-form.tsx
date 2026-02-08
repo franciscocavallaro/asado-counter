@@ -189,7 +189,7 @@ export function AsadoForm({
     try {
       if (isEditMode && asado) {
         await updateAsado(asado.id, {
-          date,
+          date: date.toISOString(),
           title: title.trim() || undefined,
           rating,
           cuts: validCuts,
@@ -197,7 +197,7 @@ export function AsadoForm({
         });
       } else {
         await createAsado({
-          date,
+          date: date.toISOString(),
           title: title.trim() || undefined,
           rating,
           cuts: validCuts,

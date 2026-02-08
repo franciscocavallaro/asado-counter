@@ -109,7 +109,7 @@ export async function createAsado(formData: AsadoFormData): Promise<Asado> {
   const { data: asado, error: asadoError } = await supabase
     .from("asados")
     .insert({
-      date: formData.date.toISOString().split("T")[0],
+      date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
       rating: formData.rating,
     })
@@ -151,7 +151,7 @@ export async function updateAsado(
   const { data: asado, error: asadoError } = await supabase
     .from("asados")
     .update({
-      date: formData.date.toISOString().split("T")[0],
+      date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
       rating: formData.rating,
     })
