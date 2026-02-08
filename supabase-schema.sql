@@ -24,6 +24,7 @@ CREATE TABLE asados (
     date DATE NOT NULL,
     title TEXT,
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 10),
+    location TEXT NOT NULL DEFAULT 'Cavallaro''s Residence',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

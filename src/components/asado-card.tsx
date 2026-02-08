@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Trash2, Users, Beef, Star, AlertTriangle } from "lucide-react";
+import { Trash2, Users, Beef, Star, AlertTriangle, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -84,6 +84,10 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
                 {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
               </p>
             )}
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="truncate">{asado.location}</span>
+            </div>
             <div className="flex items-center gap-1 bg-amber-500/20 text-amber-500 px-2 py-1 rounded-md w-fit">
               <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 fill-current" />
               <span className="font-mono font-bold text-sm sm:text-base">{asado.rating}</span>

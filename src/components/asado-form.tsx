@@ -60,6 +60,7 @@ export function AsadoForm({
       setDate(new Date(asado.date + 'T12:00:00'));
       setTitle(asado.title || "");
       setRating(asado.rating);
+      setLocation(asado.location || "Cavallaro's Residence");
       const cuts = asado.asado_cuts.length > 0
         ? asado.asado_cuts.map((ac) => ({
             name: ac.cut.name,
@@ -90,6 +91,7 @@ export function AsadoForm({
   );
   const [title, setTitle] = React.useState(asado?.title || "");
   const [rating, setRating] = React.useState(asado?.rating || 7);
+  const [location, setLocation] = React.useState(asado?.location || "Cavallaro's Residence");
   const [cutInputs, setCutInputs] = React.useState<CutInput[]>(
     asado && asado.asado_cuts.length > 0
       ? asado.asado_cuts.map((ac) => ({
@@ -113,6 +115,7 @@ export function AsadoForm({
       setDate(new Date());
       setTitle("");
       setRating(7);
+      setLocation("Cavallaro's Residence");
       setCutInputs([{ name: "", weight_kg: 0 }]);
       setWeightInputs({});
       setGuestInputs([{ name: "" }]);
@@ -192,6 +195,7 @@ export function AsadoForm({
           date: date.toISOString(),
           title: title.trim() || undefined,
           rating,
+          location: location.trim() || "Cavallaro's Residence",
           cuts: validCuts,
           guests: validGuests,
         });
@@ -200,6 +204,7 @@ export function AsadoForm({
           date: date.toISOString(),
           title: title.trim() || undefined,
           rating,
+          location: location.trim() || "Cavallaro's Residence",
           cuts: validCuts,
           guests: validGuests,
         });
@@ -239,6 +244,19 @@ export function AsadoForm({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
+              className="text-sm sm:text-base"
+            />
+          </div>
+
+          {/* Location */}
+          <div className="space-y-1.5 sm:space-y-2">
+            <Label className="text-sm sm:text-base">Ubicación</Label>
+            <Input
+              type="text"
+              placeholder="Cavallaro's Residence"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              maxLength={200}
               className="text-sm sm:text-base"
             />
           </div>
