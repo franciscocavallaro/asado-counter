@@ -27,50 +27,58 @@ export function BarcodeScanner({
   const [error, setError] = React.useState<string | null>(null);
   const scannerInstanceRef = React.useRef<any>(null);
   const Html5QrcodeClassRef = React.useRef<any>(null);
+  const isMountedRef = React.useRef<boolean>(true);
 
   const stopScanning = React.useCallback(async () => {
+    if (!isMountedRef.current) {
+      return; // No hacer nada si el componente ya se desmontó
+    }
+
     if (scannerInstanceRef.current) {
+      const scanner = scannerInstanceRef.current;
+      scannerInstanceRef.current = null; // Limpiar la referencia primero para evitar múltiples llamadas
+      
+      // Usar un pequeño delay para dar tiempo a que React termine de desmontar
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Verificar nuevamente si el componente todavía está montado
+      if (!isMountedRef.current) {
+        return;
+      }
+      
       try {
-        // Verificar si el scanner está corriendo antes de intentar detenerlo
-        const scanner = scannerInstanceRef.current;
-        
         // Verificar que el contenedor todavía existe antes de limpiar
         const containerElement = document.getElementById("barcode-scanner-container");
         
-        // html5-qrcode no expone un método para verificar el estado, así que usamos try-catch
-        await scanner.stop().catch((err: any) => {
-          // Ignorar errores si ya está detenido o si el elemento no existe
-          if (!err?.message?.includes("not running") && 
-              !err?.message?.includes("not paused") &&
-              !err?.message?.includes("removeChild")) {
-            // Solo loguear errores inesperados
-            console.debug("Scanner stop warning:", err.message);
-          }
-        });
+        // Si el contenedor ya no existe, no intentar limpiar
+        if (!containerElement || !containerElement.parentNode) {
+          return;
+        }
         
-        // Solo limpiar si el contenedor todavía existe
-        if (containerElement) {
-          await scanner.clear().catch((err: any) => {
-            // Ignorar errores de limpieza si el elemento ya fue removido
-            if (!err?.message?.includes("removeChild") && 
-                !err?.message?.includes("not found")) {
-              console.debug("Scanner clear warning:", err.message);
-            }
-          });
+        // Intentar detener el scanner silenciosamente
+        try {
+          await scanner.stop();
+        } catch (stopErr: any) {
+          // Ignorar completamente errores de stop - son esperados si ya está detenido
+        }
+        
+        // Verificar nuevamente que el contenedor existe antes de limpiar
+        const containerStillExists = document.getElementById("barcode-scanner-container");
+        if (containerStillExists && containerStillExists.parentNode) {
+          try {
+            await scanner.clear();
+          } catch (clearErr: any) {
+            // Ignorar completamente errores de clear
+          }
         }
       } catch (err: any) {
-        // Solo loguear errores que no sean sobre el estado del scanner o DOM
-        if (!err?.message?.includes("not running") && 
-            !err?.message?.includes("not paused") &&
-            !err?.message?.includes("removeChild") &&
-            !err?.message?.includes("not found")) {
-          console.error("Error stopping scanner:", err);
-        }
-      } finally {
-        scannerInstanceRef.current = null;
+        // Ignorar todos los errores silenciosamente
       }
     }
-    setIsScanning(false);
+    
+    if (isMountedRef.current) {
+      setIsScanning(false);
+    }
   }, []);
 
   const handleScanSuccess = React.useCallback((barcode: string) => {
@@ -186,6 +194,8 @@ export function BarcodeScanner({
   }, [handleScanSuccess]);
 
   React.useEffect(() => {
+    isMountedRef.current = true;
+    
     if (!open) {
       stopScanning();
       return;
@@ -228,10 +238,19 @@ export function BarcodeScanner({
           throw new Error("html5-qrcode module is not available");
         }
         
+        // Verificar que el componente todavía está montado antes de iniciar
+        if (!isMountedRef.current) {
+          return;
+        }
+        
         const Html5Qrcode = html5QrcodeModule.Html5Qrcode;
         Html5QrcodeClassRef.current = Html5Qrcode;
         startScanning(Html5Qrcode);
       } catch (err: any) {
+        if (!isMountedRef.current) {
+          return;
+        }
+        
         console.error("Error loading scanner:", err);
         
         // Detectar el tipo de error
@@ -252,6 +271,7 @@ export function BarcodeScanner({
     loadScanner();
 
     return () => {
+      isMountedRef.current = false;
       stopScanning();
     };
   }, [open, startScanning, stopScanning]);
@@ -263,16 +283,19 @@ export function BarcodeScanner({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 max-h-[90vh] flex flex-col">
+      <DialogContent 
+        className="sm:max-w-md p-0 gap-0 max-h-[90vh] flex flex-col"
+        aria-describedby="barcode-scanner-description"
+      >
         <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Scan className="h-5 w-5" />
             Escanear Código de Barras
           </DialogTitle>
-          <DialogDescription className="sr-only">
-            Apuntá la cámara al código de barras del producto para escanearlo automáticamente
-          </DialogDescription>
         </DialogHeader>
+        <DialogDescription id="barcode-scanner-description" className="sr-only">
+          Apuntá la cámara al código de barras del producto para escanearlo automáticamente
+        </DialogDescription>
 
         <div className="p-4 sm:p-6">
           {error ? (
