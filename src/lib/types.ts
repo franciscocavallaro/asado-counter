@@ -74,3 +74,20 @@ export interface WrappedStats {
   guestRanking: { name: string; count: number }[];
 }
 
+
+// Barcode mapping types
+export interface BarcodeMapping {
+  id: string;
+  barcode: string;
+  cut_name: string;
+  default_weight_kg: number | null;
+  brand: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BarcodeProductInfo {
+  cut_name: string;
+  weight_kg: number | null;
+  brand: string | null;
+}

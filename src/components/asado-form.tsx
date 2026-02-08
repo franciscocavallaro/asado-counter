@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, Plus, Trash2, Flame } from "lucide-react";
+import { CalendarIcon, Plus, Trash2, Flame, Scan } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -24,8 +24,9 @@ import {
 } from "@/components/ui/dialog";
 import { CutCombobox } from "./cut-combobox";
 import { GuestCombobox } from "./guest-combobox";
+import { BarcodeScanner } from "./barcode-scanner";
 import type { Cut, Guest, CutInput, GuestInput, AsadoWithRelations } from "@/lib/types";
-import { createAsado, updateAsado } from "@/lib/actions";
+import { createAsado, updateAsado, getProductByBarcode } from "@/lib/actions";
 
 interface AsadoFormProps {
   cuts: Cut[];
@@ -48,6 +49,8 @@ export function AsadoForm({
 }: AsadoFormProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [scannerOpen, setScannerOpen] = React.useState(false);
+  const [scanningForIndex, setScanningForIndex] = React.useState<number | null>(null);
   
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -172,6 +175,44 @@ export function AsadoForm({
     const newGuests = [...guestInputs];
     newGuests[index].name = value;
     setGuestInputs(newGuests);
+  };
+
+  const handleOpenScanner = (index: number) => {
+    setScanningForIndex(index);
+    setScannerOpen(true);
+  };
+
+  const handleBarcodeScanned = async (barcode: string) => {
+    if (scanningForIndex === null) return;
+
+    try {
+      // Buscar el producto en la base de datos
+      const productInfo = await getProductByBarcode(barcode);
+
+      if (productInfo) {
+        // Auto-completar los campos con la información encontrada
+        const newCuts = [...cutInputs];
+        newCuts[scanningForIndex].name = productInfo.cut_name;
+        if (productInfo.weight_kg !== null) {
+          newCuts[scanningForIndex].weight_kg = productInfo.weight_kg;
+          setWeightInputs(prev => ({
+            ...prev,
+            [scanningForIndex!]: productInfo.weight_kg!.toString().replace(".", ","),
+          }));
+        }
+        setCutInputs(newCuts);
+      } else {
+        // Si no se encuentra, mostrar un mensaje pero permitir que el usuario complete manualmente
+        alert(
+          `Código de barras ${barcode} no encontrado en la base de datos.\n\nPodés agregar el mapeo manualmente o completar los datos a mano.`
+        );
+      }
+    } catch (error) {
+      console.error("Error al buscar producto por código de barras:", error);
+      alert("Error al buscar el producto. Intentá de nuevo.");
+    } finally {
+      setScanningForIndex(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -324,6 +365,16 @@ export function AsadoForm({
             <div className="space-y-2">
               {cutInputs.map((cut, index) => (
                 <div key={index} className="flex gap-1.5 sm:gap-2 items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleOpenScanner(index)}
+                    className="shrink-0 h-8 w-8 sm:h-9 sm:w-9"
+                    title="Escanear código de barras"
+                  >
+                    <Scan className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  </Button>
                   <div className="flex-1 min-w-0">
                     <CutCombobox
                       cuts={cuts}
@@ -449,6 +500,15 @@ export function AsadoForm({
           </div>
         </form>
       </DialogContent>
+
+      <BarcodeScanner
+        open={scannerOpen}
+        onClose={() => {
+          setScannerOpen(false);
+          setScanningForIndex(null);
+        }}
+        onScan={handleBarcodeScanned}
+      />
     </Dialog>
   );
 }

@@ -8,6 +8,7 @@ import type {
   Guest,
   AsadoFormData,
   WrappedStats,
+  BarcodeProductInfo,
 } from "./types";
 
 // Get all cuts
@@ -293,3 +294,30 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   };
 }
 
+
+// Get product info by barcode
+export async function getProductByBarcode(
+  barcode: string
+): Promise<BarcodeProductInfo | null> {
+  const { data, error } = await supabase
+    .from("barcode_mappings")
+    .select("cut_name, default_weight_kg, brand")
+    .eq("barcode", barcode.trim())
+    .single();
+
+  if (error) {
+    // Si no encuentra el código, retornar null (no es un error crítico)
+    if (error.code === "PGRST116") {
+      return null;
+    }
+    throw error;
+  }
+
+  if (!data) return null;
+
+  return {
+    cut_name: data.cut_name,
+    weight_kg: data.default_weight_kg,
+    brand: data.brand,
+  };
+}
