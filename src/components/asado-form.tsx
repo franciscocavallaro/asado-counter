@@ -24,9 +24,18 @@ import {
 } from "@/components/ui/dialog";
 import { CutCombobox } from "./cut-combobox";
 import { GuestCombobox } from "./guest-combobox";
-import { BarcodeScanner } from "./barcode-scanner";
+import dynamic from "next/dynamic";
 import type { Cut, Guest, CutInput, GuestInput, AsadoWithRelations } from "@/lib/types";
 import { createAsado, updateAsado, getProductByBarcode } from "@/lib/actions";
+
+// Importar BarcodeScanner dinámicamente solo en el cliente
+const BarcodeScanner = dynamic(
+  () => import("./barcode-scanner").then((mod) => ({ default: mod.BarcodeScanner })),
+  { 
+    ssr: false,
+    loading: () => null
+  }
+);
 
 interface AsadoFormProps {
   cuts: Cut[];

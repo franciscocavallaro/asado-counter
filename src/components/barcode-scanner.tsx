@@ -27,63 +27,33 @@ export function BarcodeScanner({
   const scannerInstanceRef = React.useRef<any>(null);
   const Html5QrcodeClassRef = React.useRef<any>(null);
 
-  React.useEffect(() => {
-    if (!open) {
-      stopScanning();
-      return;
-    }
-
-    // Cargar html5-qrcode dinámicamente
-    const loadScanner = async () => {
+  const stopScanning = React.useCallback(async () => {
+    if (scannerInstanceRef.current) {
       try {
-        // Verificar que estamos en HTTPS o localhost (requerido para acceso a cámara)
-        const isSecureContext = window.isSecureContext || 
-          window.location.protocol === 'https:' || 
-          window.location.hostname === 'localhost' || 
-          window.location.hostname === '127.0.0.1';
-        
-        if (!isSecureContext) {
-          setError("El acceso a la cámara requiere HTTPS. Por favor, usá una conexión segura.");
-          return;
-        }
-
-        // Verificar que el navegador soporte getUserMedia
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          setError("Tu navegador no soporta el acceso a la cámara. Probá con Safari, Chrome o Firefox.");
-          return;
-        }
-
-        // @ts-ignore - html5-qrcode se carga dinámicamente
-        const html5QrcodeModule = await import("html5-qrcode");
-        const Html5Qrcode = html5QrcodeModule.Html5Qrcode;
-        Html5QrcodeClassRef.current = Html5Qrcode;
-        startScanning(Html5Qrcode);
-      } catch (err: any) {
-        console.error("Error loading scanner:", err);
-        
-        // Detectar el tipo de error
-        let errorMessage = "No se pudo cargar el escáner.";
-        
-        if (err?.message?.includes("Cannot find module") || err?.code === "MODULE_NOT_FOUND") {
-          errorMessage = "El paquete html5-qrcode no está instalado. Ejecutá: npm install html5-qrcode";
-        } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("network")) {
-          errorMessage = "Error de red al cargar el escáner. Verificá tu conexión e intentá de nuevo.";
-        } else {
-          errorMessage = `Error al cargar el escáner: ${err?.message || "Error desconocido"}`;
-        }
-        
-        setError(errorMessage);
+        await scannerInstanceRef.current.stop();
+        await scannerInstanceRef.current.clear();
+      } catch (err) {
+        console.error("Error stopping scanner:", err);
       }
-    };
+      scannerInstanceRef.current = null;
+    }
+    setIsScanning(false);
+  }, []);
 
-    loadScanner();
+  const handleScanSuccess = React.useCallback((barcode: string) => {
+    // Detener el escáner
+    stopScanning();
+    
+    // Llamar al callback con el código escaneado
+    onScan(barcode);
+    
+    // Cerrar el diálogo después de un pequeño delay
+    setTimeout(() => {
+      onClose();
+    }, 100);
+  }, [onScan, onClose, stopScanning]);
 
-    return () => {
-      stopScanning();
-    };
-  }, [open]);
-
-  const startScanning = async (Html5Qrcode: any) => {
+  const startScanning = React.useCallback(async (Html5Qrcode: any) => {
     try {
       setError(null);
       setIsScanning(true);
@@ -162,33 +132,78 @@ export function BarcodeScanner({
       setIsScanning(false);
       scannerInstanceRef.current = null;
     }
-  };
+  }, [handleScanSuccess]);
 
-  const stopScanning = async () => {
-    if (scannerInstanceRef.current) {
-      try {
-        await scannerInstanceRef.current.stop();
-        await scannerInstanceRef.current.clear();
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
-      }
-      scannerInstanceRef.current = null;
+  React.useEffect(() => {
+    if (!open) {
+      stopScanning();
+      return;
     }
-    setIsScanning(false);
-  };
 
-  const handleScanSuccess = (barcode: string) => {
-    // Detener el escáner
-    stopScanning();
-    
-    // Llamar al callback con el código escaneado
-    onScan(barcode);
-    
-    // Cerrar el diálogo después de un pequeño delay
-    setTimeout(() => {
-      onClose();
-    }, 100);
-  };
+    // Verificar que estamos en el cliente
+    if (typeof window === 'undefined') {
+      setError("El escáner solo está disponible en el navegador.");
+      return;
+    }
+
+    // Cargar html5-qrcode dinámicamente
+    const loadScanner = async () => {
+      try {
+        // Verificar que estamos en HTTPS o localhost (requerido para acceso a cámara)
+        const isSecureContext = window.isSecureContext || 
+          window.location.protocol === 'https:' || 
+          window.location.hostname === 'localhost' || 
+          window.location.hostname === '127.0.0.1';
+        
+        if (!isSecureContext) {
+          setError("El acceso a la cámara requiere HTTPS. Por favor, usá una conexión segura.");
+          return;
+        }
+
+        // Verificar que el navegador soporte getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setError("Tu navegador no soporta el acceso a la cámara. Probá con Safari, Chrome o Firefox.");
+          return;
+        }
+
+        // @ts-ignore - html5-qrcode se carga dinámicamente
+        const html5QrcodeModule = await import("html5-qrcode").catch((importError) => {
+          // Si falla la importación, intentar con una ruta alternativa
+          console.error("Error importing html5-qrcode:", importError);
+          throw importError;
+        });
+        
+        if (!html5QrcodeModule || !html5QrcodeModule.Html5Qrcode) {
+          throw new Error("html5-qrcode module is not available");
+        }
+        
+        const Html5Qrcode = html5QrcodeModule.Html5Qrcode;
+        Html5QrcodeClassRef.current = Html5Qrcode;
+        startScanning(Html5Qrcode);
+      } catch (err: any) {
+        console.error("Error loading scanner:", err);
+        
+        // Detectar el tipo de error
+        let errorMessage = "No se pudo cargar el escáner.";
+        
+        if (err?.message?.includes("Cannot find module") || err?.code === "MODULE_NOT_FOUND") {
+          errorMessage = "El paquete html5-qrcode no está instalado. Ejecutá: npm install html5-qrcode";
+        } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("network")) {
+          errorMessage = "Error de red al cargar el escáner. Verificá tu conexión e intentá de nuevo.";
+        } else {
+          errorMessage = `Error al cargar el escáner: ${err?.message || "Error desconocido"}`;
+        }
+        
+        setError(errorMessage);
+      }
+    };
+
+    loadScanner();
+
+    return () => {
+      stopScanning();
+    };
+  }, [open, startScanning, stopScanning]);
 
   const handleClose = () => {
     stopScanning();
