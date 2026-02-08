@@ -37,34 +37,14 @@ export function BarcodeScanner({
     const scanner = scannerInstanceRef.current;
     scannerInstanceRef.current = null;
     
-    // Interceptar errores de removeChild globalmente para este componente
-    const errorHandler = (event: ErrorEvent) => {
-      if (
-        event.error?.name === 'NotFoundError' && 
-        event.error?.message?.includes('removeChild') &&
-        event.error?.message?.includes('barcode-scanner-container')
-      ) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return false;
-      }
-    };
-    
-    window.addEventListener('error', errorHandler, true);
-    
     try {
       // Solo llamar a stop(), NO a clear()
       // clear() intenta limpiar el DOM y causa removeChild cuando React ya lo hizo
-      await Promise.race([
-        scanner.stop(),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1000))
-      ]).catch(() => {
-        // Ignorar todos los errores incluyendo timeout
+      await scanner.stop().catch(() => {
+        // Ignorar errores de stop silenciosamente
       });
     } catch (err: any) {
-      // Ignorar silenciosamente
-    } finally {
-      window.removeEventListener('error', errorHandler, true);
+      // Ignorar silenciosamente - puede fallar si el scanner ya está detenido
     }
     
     if (isMountedRef.current) {
@@ -187,38 +167,15 @@ export function BarcodeScanner({
   React.useEffect(() => {
     isMountedRef.current = true;
     
-    // Interceptar errores de removeChild globalmente para prevenir que se muestren en consola
-    const globalErrorHandler = (event: ErrorEvent) => {
-      const error = event.error;
-      if (
-        error &&
-        error.name === 'NotFoundError' && 
-        (error.message?.includes('removeChild') || error.stack?.includes('removeChild'))
-      ) {
-        // Silenciar errores de removeChild que vienen de html5-qrcode
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return false;
-      }
-    };
-    
-    window.addEventListener('error', globalErrorHandler, true);
-    
     if (!open) {
       stopScanning();
-      return () => {
-        window.removeEventListener('error', globalErrorHandler, true);
-        isMountedRef.current = false;
-      };
+      return;
     }
 
     // Verificar que estamos en el cliente
     if (typeof window === 'undefined') {
       setError("El escáner solo está disponible en el navegador.");
-      return () => {
-        window.removeEventListener('error', globalErrorHandler, true);
-        isMountedRef.current = false;
-      };
+      return;
     }
 
     // Cargar html5-qrcode dinámicamente
@@ -284,7 +241,6 @@ export function BarcodeScanner({
     loadScanner();
 
     return () => {
-      window.removeEventListener('error', globalErrorHandler, true);
       isMountedRef.current = false;
       stopScanning();
     };
