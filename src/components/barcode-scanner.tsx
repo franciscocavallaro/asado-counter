@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -30,12 +31,44 @@ export function BarcodeScanner({
   const stopScanning = React.useCallback(async () => {
     if (scannerInstanceRef.current) {
       try {
-        await scannerInstanceRef.current.stop();
-        await scannerInstanceRef.current.clear();
-      } catch (err) {
-        console.error("Error stopping scanner:", err);
+        // Verificar si el scanner está corriendo antes de intentar detenerlo
+        const scanner = scannerInstanceRef.current;
+        
+        // Verificar que el contenedor todavía existe antes de limpiar
+        const containerElement = document.getElementById("barcode-scanner-container");
+        
+        // html5-qrcode no expone un método para verificar el estado, así que usamos try-catch
+        await scanner.stop().catch((err: any) => {
+          // Ignorar errores si ya está detenido o si el elemento no existe
+          if (!err?.message?.includes("not running") && 
+              !err?.message?.includes("not paused") &&
+              !err?.message?.includes("removeChild")) {
+            // Solo loguear errores inesperados
+            console.debug("Scanner stop warning:", err.message);
+          }
+        });
+        
+        // Solo limpiar si el contenedor todavía existe
+        if (containerElement) {
+          await scanner.clear().catch((err: any) => {
+            // Ignorar errores de limpieza si el elemento ya fue removido
+            if (!err?.message?.includes("removeChild") && 
+                !err?.message?.includes("not found")) {
+              console.debug("Scanner clear warning:", err.message);
+            }
+          });
+        }
+      } catch (err: any) {
+        // Solo loguear errores que no sean sobre el estado del scanner o DOM
+        if (!err?.message?.includes("not running") && 
+            !err?.message?.includes("not paused") &&
+            !err?.message?.includes("removeChild") &&
+            !err?.message?.includes("not found")) {
+          console.error("Error stopping scanner:", err);
+        }
+      } finally {
+        scannerInstanceRef.current = null;
       }
-      scannerInstanceRef.current = null;
     }
     setIsScanning(false);
   }, []);
@@ -57,6 +90,12 @@ export function BarcodeScanner({
     try {
       setError(null);
       setIsScanning(true);
+
+      // Verificar que el contenedor existe antes de crear el scanner
+      const containerElement = document.getElementById("barcode-scanner-container");
+      if (!containerElement) {
+        throw new Error("Scanner container not found");
+      }
 
       const scanner = new Html5Qrcode("barcode-scanner-container");
       scannerInstanceRef.current = scanner;
@@ -92,10 +131,22 @@ export function BarcodeScanner({
           // Usar un tamaño relativo en móviles
           const minEdgePercentage = isMobile ? 0.7 : 0.3;
           const minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-          const qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          
+          // Asegurar que el tamaño mínimo sea 50px (requerido por html5-qrcode)
+          const MIN_QRBOX_SIZE = 50;
+          if (qrboxSize < MIN_QRBOX_SIZE) {
+            // Si el contenedor es muy pequeño, usar el tamaño mínimo
+            // pero asegurarse de que no exceda las dimensiones del viewfinder
+            qrboxSize = Math.min(MIN_QRBOX_SIZE, minEdgeSize - 10);
+          }
+          
+          // Asegurar que no exceda las dimensiones disponibles
+          qrboxSize = Math.min(qrboxSize, viewfinderWidth - 10, viewfinderHeight - 10);
+          
           return {
-            width: qrboxSize,
-            height: qrboxSize,
+            width: Math.max(MIN_QRBOX_SIZE, qrboxSize),
+            height: Math.max(MIN_QRBOX_SIZE, qrboxSize),
           };
         },
         aspectRatio: 1.0,
@@ -218,6 +269,9 @@ export function BarcodeScanner({
             <Scan className="h-5 w-5" />
             Escanear Código de Barras
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Apuntá la cámara al código de barras del producto para escanearlo automáticamente
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-4 sm:p-6">
