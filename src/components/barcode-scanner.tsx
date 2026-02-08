@@ -58,9 +58,21 @@ export function BarcodeScanner({
         const Html5Qrcode = html5QrcodeModule.Html5Qrcode;
         Html5QrcodeClassRef.current = Html5Qrcode;
         startScanning(Html5Qrcode);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error loading scanner:", err);
-        setError("No se pudo cargar el escáner. Asegurate de instalar html5-qrcode: npm install html5-qrcode");
+        
+        // Detectar el tipo de error
+        let errorMessage = "No se pudo cargar el escáner.";
+        
+        if (err?.message?.includes("Cannot find module") || err?.code === "MODULE_NOT_FOUND") {
+          errorMessage = "El paquete html5-qrcode no está instalado. Ejecutá: npm install html5-qrcode";
+        } else if (err?.message?.includes("Failed to fetch") || err?.message?.includes("network")) {
+          errorMessage = "Error de red al cargar el escáner. Verificá tu conexión e intentá de nuevo.";
+        } else {
+          errorMessage = `Error al cargar el escáner: ${err?.message || "Error desconocido"}`;
+        }
+        
+        setError(errorMessage);
       }
     };
 
