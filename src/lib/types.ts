@@ -17,6 +17,7 @@ export interface Asado {
   title: string | null;
   rating: number;
   created_at: string;
+  location?: string;
 }
 
 export interface AsadoCut {
@@ -60,6 +61,7 @@ export interface AsadoFormData {
   rating: number;
   cuts: CutInput[];
   guests: GuestInput[];
+  location?: string;
 }
 
 // Statistics types
