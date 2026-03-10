@@ -113,6 +113,7 @@ export async function createAsado(formData: AsadoFormData): Promise<Asado> {
       date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
       rating: formData.rating,
+      location: formData.location?.trim() || null,
     })
     .select()
     .single();
@@ -155,6 +156,7 @@ export async function updateAsado(
       date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
       rating: formData.rating,
+      location: formData.location?.trim() || null,
     })
     .eq("id", id)
     .select()
