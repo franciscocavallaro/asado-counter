@@ -67,7 +67,7 @@ export default function WrappedPage() {
             </Button>
           </div>
 
-          <Link href="/logout">
+          <Link href="/logout" prefetch={false}>
             <Button variant="ghost" className="gap-2 px-2 sm:px-4" size="sm">
               <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Salir</span>

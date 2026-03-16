@@ -71,7 +71,7 @@ export default function Home() {
                     Resumen
                   </Button>
                 </Link>
-                <Link href="/logout">
+                <Link href="/logout" prefetch={false}>
                   <Button variant="ghost" className="gap-2" size="sm">
                     <LogOut className="h-4 w-4" />
                     Salir
