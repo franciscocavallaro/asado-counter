@@ -382,7 +382,10 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   // Sort rankings
   const cutRanking = Object.entries(cutStats)
     .map(([name, stats]) => ({ name, ...stats }))
-    .sort((a, b) => b.count - a.count);
+    .sort((a, b) => {
+      if (b.totalKg !== a.totalKg) return b.totalKg - a.totalKg;
+      return b.count - a.count;
+    });
 
   const guestRanking = Object.entries(guestStats)
     .map(([name, count]) => ({ name, count }))

@@ -129,7 +129,7 @@ export function WrappedStatsDisplay({ stats, year }: WrappedStatsDisplayProps) {
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm sm:text-base truncate">{cut.name}</p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        {cut.count} {cut.count === 1 ? "vez" : "veces"} · {truncateTo1Decimal(cut.totalKg)} kg
+                        {truncateTo1Decimal(cut.totalKg)} kg · {cut.count} {cut.count === 1 ? "vez" : "veces"}
                       </p>
                     </div>
                   </div>
@@ -194,4 +194,3 @@ export function WrappedStatsDisplay({ stats, year }: WrappedStatsDisplayProps) {
     </div>
   );
 }
-
