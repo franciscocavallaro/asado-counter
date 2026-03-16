@@ -18,11 +18,11 @@ export async function POST(request: NextRequest) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("error", "1");
     loginUrl.searchParams.set("redirect", redirectPath);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(loginUrl, 303);
   }
 
   const redirectUrl = new URL(redirectPath, request.url);
-  const response = NextResponse.redirect(redirectUrl);
+  const response = NextResponse.redirect(redirectUrl, 303);
   response.cookies.set(ADMIN_AUTH_COOKIE, expectedPassword, {
     httpOnly: true,
     sameSite: "lax",
