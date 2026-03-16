@@ -87,23 +87,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
     try {
       if (navigator.share) {
         try {
-          const shareData = {
-            title: asado.title || `Asado ${displayDate}`,
-            text: "Votá este asado",
-            url: shareUrl,
-          };
-          if ("canShare" in navigator && typeof navigator.canShare === "function") {
-            if (navigator.canShare({ url: shareUrl })) {
-              await navigator.share(shareData);
-            } else {
-              await navigator.share({
-                title: shareData.title,
-                text: `${shareData.text}\n${shareUrl}`,
-              });
-            }
-          } else {
-            await navigator.share(shareData);
-          }
+          await navigator.share({ url: shareUrl });
           return;
         } catch (shareError) {
           if (shareError instanceof DOMException && shareError.name === "AbortError") {
