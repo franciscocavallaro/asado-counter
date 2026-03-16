@@ -17,7 +17,8 @@ export default function VotePage() {
   const asadoId = Array.isArray(asadoIdParam) ? asadoIdParam[0] : asadoIdParam;
 
   const [asado, setAsado] = useState<Asado | null>(null);
-  const [rating, setRating] = useState(8);
+  const [rating, setRating] = useState(1);
+  const [hasSelectedRating, setHasSelectedRating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -50,7 +51,7 @@ export default function VotePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!asadoId) return;
+    if (!asadoId || !hasSelectedRating) return;
 
     setSubmitting(true);
     try {
@@ -104,17 +105,33 @@ export default function VotePage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-amber-500 fill-current" />
-                    <p className="font-medium">Puntuación: {rating}/10</p>
+                    <p className="font-medium">
+                      {hasSelectedRating ? `Puntuación: ${rating}/10` : "Elegí una puntuación"}
+                    </p>
                   </div>
                   <Slider
                     value={[rating]}
-                    onValueChange={([value]) => setRating(value)}
+                    onValueChange={(values) => {
+                      const selected = values[0];
+                      if (typeof selected === "number") {
+                        setRating(selected);
+                        setHasSelectedRating(true);
+                      }
+                    }}
                     min={1}
                     max={10}
                     step={1}
                   />
+                  <div className="flex justify-between text-xs text-muted-foreground px-0.5">
+                    <span>1</span>
+                    <span>10</span>
+                  </div>
                 </div>
-                <Button type="submit" className="w-full" disabled={submitting}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={submitting || !hasSelectedRating}
+                >
                   {submitting ? "Guardando..." : "Enviar voto"}
                 </Button>
               </form>
