@@ -1,22 +1,29 @@
-"use client";
-
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import { Flame, Lock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
-  const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
-  const hasError = searchParams.get("error") === "1";
+type SearchParamsInput =
+  | Record<string, string | string[] | undefined>
+  | Promise<Record<string, string | string[] | undefined>>;
 
-  const actionUrl = useMemo(
-    () => `/api/login?redirect=${encodeURIComponent(redirect)}`,
-    [redirect]
-  );
+function getFirstValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return value[0] || "";
+  }
+  return value || "";
+}
+
+interface LoginPageProps {
+  searchParams?: SearchParamsInput;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const resolvedParams = await Promise.resolve(searchParams || {});
+  const redirect = getFirstValue(resolvedParams.redirect) || "/";
+  const hasError = getFirstValue(resolvedParams.error) === "1";
+  const actionUrl = `/api/login?redirect=${encodeURIComponent(redirect)}`;
 
   return (
     <main className="min-h-[100dvh] bg-background px-4 py-8 flex items-center justify-center">
