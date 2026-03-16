@@ -46,24 +46,12 @@ CREATE TABLE asado_guests (
     UNIQUE(asado_id, guest_id)
 );
 
--- Barcode mappings table (maps scanned product barcodes to cut defaults)
-CREATE TABLE barcode_mappings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    barcode TEXT NOT NULL UNIQUE,
-    cut_name TEXT NOT NULL,
-    default_weight_kg DECIMAL(10, 2),
-    brand TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
 -- Create indexes for better query performance
 CREATE INDEX idx_asado_cuts_asado_id ON asado_cuts(asado_id);
 CREATE INDEX idx_asado_cuts_cut_id ON asado_cuts(cut_id);
 CREATE INDEX idx_asado_guests_asado_id ON asado_guests(asado_id);
 CREATE INDEX idx_asado_guests_guest_id ON asado_guests(guest_id);
 CREATE INDEX idx_asados_date ON asados(date);
-CREATE INDEX idx_barcode_mappings_barcode ON barcode_mappings(barcode);
 
 -- Disable RLS for simplicity (no auth)
 ALTER TABLE cuts ENABLE ROW LEVEL SECURITY;
@@ -71,7 +59,6 @@ ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asado_cuts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asado_guests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE barcode_mappings ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations (no auth)
 CREATE POLICY "Allow all operations on cuts" ON cuts FOR ALL USING (true) WITH CHECK (true);
@@ -79,4 +66,3 @@ CREATE POLICY "Allow all operations on guests" ON guests FOR ALL USING (true) WI
 CREATE POLICY "Allow all operations on asados" ON asados FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on asado_cuts" ON asado_cuts FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on asado_guests" ON asado_guests FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on barcode_mappings" ON barcode_mappings FOR ALL USING (true) WITH CHECK (true);
