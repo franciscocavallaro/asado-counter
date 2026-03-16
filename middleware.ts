@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_AUTH_COOKIE } from "@/lib/auth";
+import { ADMIN_AUTH_COOKIE, ADMIN_AUTH_COOKIE_VALUE } from "@/lib/auth";
 
 function isPublicPath(pathname: string): boolean {
   return (
@@ -22,7 +22,7 @@ export function middleware(request: NextRequest) {
   }
 
   const authCookie = request.cookies.get(ADMIN_AUTH_COOKIE)?.value;
-  if (authCookie === password) {
+  if (authCookie === ADMIN_AUTH_COOKIE_VALUE) {
     return NextResponse.next();
   }
 

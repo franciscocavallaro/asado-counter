@@ -3,11 +3,11 @@ import { ADMIN_AUTH_COOKIE } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const loginUrl = new URL("/login", request.url);
-  const response = NextResponse.redirect(loginUrl);
+  const response = NextResponse.redirect(loginUrl, 303);
   response.cookies.set(ADMIN_AUTH_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: request.nextUrl.protocol === "https:",
     path: "/",
     maxAge: 0,
   });

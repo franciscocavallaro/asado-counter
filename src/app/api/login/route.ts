@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_AUTH_COOKIE } from "@/lib/auth";
+import { ADMIN_AUTH_COOKIE, ADMIN_AUTH_COOKIE_VALUE } from "@/lib/auth";
 
 function getSafeRedirectPath(value: string | null): string {
   if (!value || !value.startsWith("/")) {
@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
 
   const redirectUrl = new URL(redirectPath, request.url);
   const response = NextResponse.redirect(redirectUrl, 303);
-  response.cookies.set(ADMIN_AUTH_COOKIE, expectedPassword, {
+  response.cookies.set(ADMIN_AUTH_COOKIE, ADMIN_AUTH_COOKIE_VALUE, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: request.nextUrl.protocol === "https:",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });

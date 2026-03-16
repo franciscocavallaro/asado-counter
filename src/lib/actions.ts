@@ -11,6 +11,33 @@ import type {
   WrappedStats,
 } from "./types";
 
+const ASADO_RELATIONS_SELECT = `
+  *,
+  asado_cuts (
+    *,
+    cut:cuts (*)
+  ),
+  asado_guests (
+    *,
+    guest:guests (*)
+  )
+`;
+
+const ASADO_RELATIONS_WITH_VOTES_SELECT = `
+  ${ASADO_RELATIONS_SELECT},
+  asado_votes (
+    *
+  )
+`;
+
+function isAsadoVotesRelationMissing(error: unknown): boolean {
+  const message = String((error as { message?: string; details?: string })?.message || "").toLowerCase();
+  const details = String((error as { message?: string; details?: string })?.details || "").toLowerCase();
+  const full = `${message} ${details}`;
+
+  return full.includes("asado_votes");
+}
+
 // Get all cuts
 export async function getCuts(): Promise<Cut[]> {
   const { data, error } = await supabase
@@ -83,34 +110,36 @@ export async function getOrCreateGuest(name: string): Promise<Guest> {
 
 // Get all asados with relations
 export async function getAsados(): Promise<AsadoWithRelations[]> {
-  const { data, error } = await supabase
+  const withVotes = await supabase
     .from("asados")
-    .select(
-      `
-      *,
-      asado_cuts (
-        *,
-        cut:cuts (*)
-      ),
-      asado_guests (
-        *,
-        guest:guests (*)
-      ),
-      asado_votes (
-        *
-      )
-    `
-    )
+    .select(ASADO_RELATIONS_WITH_VOTES_SELECT)
     .order("date", { ascending: false });
 
-  if (error) throw error;
-  return data || [];
+  if (!withVotes.error) {
+    return (withVotes.data || []) as AsadoWithRelations[];
+  }
+
+  if (!isAsadoVotesRelationMissing(withVotes.error)) {
+    throw withVotes.error;
+  }
+
+  const withoutVotes = await supabase
+    .from("asados")
+    .select(ASADO_RELATIONS_SELECT)
+    .order("date", { ascending: false });
+
+  if (withoutVotes.error) throw withoutVotes.error;
+
+  return (withoutVotes.data || []).map((asado) => ({
+    ...asado,
+    asado_votes: [],
+  })) as AsadoWithRelations[];
 }
 
 // Create a new asado
 export async function createAsado(formData: AsadoFormData): Promise<Asado> {
-  // Create the asado
-  const { data: asado, error: asadoError } = await supabase
+  // Create the asado (new schema uses null rating; older schema requires a value)
+  const nullableInsert = await supabase
     .from("asados")
     .insert({
       date: new Date(formData.date).toISOString().split("T")[0],
@@ -121,7 +150,23 @@ export async function createAsado(formData: AsadoFormData): Promise<Asado> {
     .select()
     .single();
 
-  if (asadoError) throw asadoError;
+  let asado = nullableInsert.data;
+
+  if (nullableInsert.error) {
+    const fallbackInsert = await supabase
+      .from("asados")
+      .insert({
+        date: new Date(formData.date).toISOString().split("T")[0],
+        title: formData.title?.trim() || null,
+        rating: 7,
+        location: formData.location?.trim() || null,
+      })
+      .select()
+      .single();
+
+    if (fallbackInsert.error) throw fallbackInsert.error;
+    asado = fallbackInsert.data;
+  }
 
   // Process cuts
   for (const cutInput of formData.cuts) {
@@ -248,28 +293,31 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   // Get all asados for the year with relations
   const { data: asados, error } = await supabase
     .from("asados")
-    .select(
-      `
-      *,
-      asado_cuts (
-        *,
-        cut:cuts (*)
-      ),
-      asado_guests (
-        *,
-        guest:guests (*)
-      ),
-      asado_votes (
-        *
-      )
-    `
-    )
+    .select(ASADO_RELATIONS_WITH_VOTES_SELECT)
     .gte("date", startDate)
     .lte("date", endDate);
 
-  if (error) throw error;
+  let wrappedAsados = asados;
 
-  if (!asados || asados.length === 0) {
+  if (error) {
+    if (!isAsadoVotesRelationMissing(error)) {
+      throw error;
+    }
+
+    const fallback = await supabase
+      .from("asados")
+      .select(ASADO_RELATIONS_SELECT)
+      .gte("date", startDate)
+      .lte("date", endDate);
+
+    if (fallback.error) throw fallback.error;
+    wrappedAsados = (fallback.data || []).map((asado) => ({
+      ...asado,
+      asado_votes: [],
+    }));
+  }
+
+  if (!wrappedAsados || wrappedAsados.length === 0) {
     return {
       totalKg: 0,
       totalAsados: 0,
@@ -286,7 +334,7 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   const guestStats: Record<string, number> = {};
   const uniqueGuests = new Set<string>();
 
-  for (const asado of asados) {
+  for (const asado of wrappedAsados) {
     // Process cuts
     for (const asadoCut of asado.asado_cuts || []) {
       const cutName = asadoCut.cut?.name || "Unknown";
@@ -312,7 +360,7 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   let ratingSum = 0;
   let ratedAsados = 0;
 
-  for (const asado of asados) {
+  for (const asado of wrappedAsados) {
     const votes = (asado.asado_votes || []) as { score: number }[];
     if (votes.length > 0) {
       const voteAverage =
@@ -342,7 +390,7 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
 
   return {
     totalKg: Math.round(totalKg * 100) / 100,
-    totalAsados: asados.length,
+    totalAsados: wrappedAsados.length,
     totalUniqueGuests: uniqueGuests.size,
     averageRating: Math.round(averageRating * 10) / 10,
     cutRanking,
