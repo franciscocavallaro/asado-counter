@@ -6,6 +6,7 @@ A minimalist web app to track your asados (Argentinian BBQs). Record meat cuts, 
 
 - 📅 Register asados with date and rating (1-10)
 - 🥩 Track meat cuts with weights (auto-complete from history)
+- 📷 Scan product barcodes to auto-complete cut + weight
 - 👥 Record guests who attended (auto-complete from history)
 - 📊 Year-end wrapped with stats:
   - Total kg of meat
@@ -36,7 +37,11 @@ npm install
 
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to the SQL Editor and run the contents of `supabase-schema.sql`
-3. Go to Settings → API and copy your Project URL and anon key
+3. If your project is already running, also execute:
+   - `migration-add-title.sql`
+   - `migration-add-location.sql`
+   - `migration-add-barcode-mappings.sql`
+4. Go to Settings → API and copy your Project URL and anon key
 
 ### 3. Configure environment variables
 
@@ -65,6 +70,11 @@ Open [http://localhost:3000](http://localhost:3000)
 2. Import the project in Vercel
 3. Add the environment variables in Vercel's project settings
 4. Deploy!
+
+Barcode scanner notes:
+- Camera access requires HTTPS (Vercel provides this automatically in production).
+- First-time scans are resolved against an external barcode catalog (Open Food Facts).
+- If a product is found, the app auto-fills cut and (when available) package weight.
 
 ## License
 

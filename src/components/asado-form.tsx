@@ -27,7 +27,11 @@ import { CutCombobox } from "./cut-combobox";
 import { GuestCombobox } from "./guest-combobox";
 import dynamic from "next/dynamic";
 import type { Cut, Guest, CutInput, GuestInput, AsadoWithRelations } from "@/lib/types";
-import { createAsado, updateAsado, getProductByBarcode } from "@/lib/actions";
+import {
+  createAsado,
+  updateAsado,
+  getProductByBarcode,
+} from "@/lib/actions";
 
 // Importar BarcodeScanner dinámicamente solo en el cliente
 const BarcodeScanner = dynamic(
@@ -194,6 +198,7 @@ export function AsadoForm({
 
   const handleBarcodeScanned = async (barcode: string) => {
     if (scanningForIndex === null) return;
+    const rowIndex = scanningForIndex;
 
     try {
       // Buscar el producto en la base de datos
@@ -202,19 +207,20 @@ export function AsadoForm({
       if (productInfo) {
         // Auto-completar los campos con la información encontrada
         const newCuts = [...cutInputs];
-        newCuts[scanningForIndex].name = productInfo.cut_name;
-        if (productInfo.weight_kg !== null) {
-          newCuts[scanningForIndex].weight_kg = productInfo.weight_kg;
+        newCuts[rowIndex].name = productInfo.cut_name;
+        const scannedWeight = productInfo.weight_kg;
+        if (scannedWeight !== null) {
+          newCuts[rowIndex].weight_kg = scannedWeight;
           setWeightInputs(prev => ({
             ...prev,
-            [scanningForIndex!]: productInfo.weight_kg!.toString().replace(".", ","),
+            [rowIndex]: scannedWeight.toString().replace(".", ","),
           }));
         }
         setCutInputs(newCuts);
       } else {
         // Si no se encuentra, mostrar un mensaje pero permitir que el usuario complete manualmente
         alert(
-          `Código de barras ${barcode} no encontrado en la base de datos.\n\nPodés agregar el mapeo manualmente o completar los datos a mano.`
+          `Código de barras ${barcode} no encontrado en catálogos disponibles.\n\nCompletá los datos manualmente para este caso.`
         );
       }
     } catch (error) {
@@ -260,6 +266,7 @@ export function AsadoForm({
           guests: validGuests,
         });
       }
+
       resetForm();
       setOpen(false);
       onSuccess();
@@ -528,4 +535,3 @@ export function AsadoForm({
     </Dialog>
   );
 }
-

@@ -166,7 +166,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
               ¿Estás seguro que querés eliminar este asado? Esta acción no se puede deshacer.
               {asado.title && (
                 <span className="block mt-2 font-medium">
-                  "{asado.title}"
+                  &quot;{asado.title}&quot;
                 </span>
               )}
             </DialogDescription>
@@ -207,4 +207,3 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
     </>
   );
 }
-
