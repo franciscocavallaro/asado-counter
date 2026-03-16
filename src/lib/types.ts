@@ -15,7 +15,7 @@ export interface Asado {
   id: string;
   date: string;
   title: string | null;
-  rating: number;
+  rating: number | null;
   created_at: string;
   location?: string;
 }
@@ -37,10 +37,18 @@ export interface AsadoGuest {
   guest?: Guest;
 }
 
+export interface AsadoVote {
+  id: string;
+  asado_id: string;
+  score: number;
+  created_at: string;
+}
+
 // Extended Asado with relations
 export interface AsadoWithRelations extends Asado {
   asado_cuts: (AsadoCut & { cut: Cut })[];
   asado_guests: (AsadoGuest & { guest: Guest })[];
+  asado_votes: AsadoVote[];
 }
 
 // Form types
@@ -58,7 +66,6 @@ export interface GuestInput {
 export interface AsadoFormData {
   date: string; // ISO string format
   title?: string;
-  rating: number;
   cuts: CutInput[];
   guests: GuestInput[];
   location?: string;

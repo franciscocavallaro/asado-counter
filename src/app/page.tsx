@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Flame, BarChart3 } from "lucide-react";
+import { Flame, BarChart3, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AsadoForm } from "@/components/asado-form";
 import { AsadoList } from "@/components/asado-list";
@@ -64,12 +64,20 @@ export default function Home() {
             </div>
 
             <div className="flex justify-center sm:justify-end">
-              <Link href="/wrapped">
-                <Button variant="outline" className="gap-2" size="sm">
-                  <BarChart3 className="h-4 w-4" />
-                  Resumen
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href="/wrapped">
+                  <Button variant="outline" className="gap-2" size="sm">
+                    <BarChart3 className="h-4 w-4" />
+                    Resumen
+                  </Button>
+                </Link>
+                <Link href="/logout">
+                  <Button variant="ghost" className="gap-2" size="sm">
+                    <LogOut className="h-4 w-4" />
+                    Salir
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -97,7 +105,12 @@ export default function Home() {
             <p className="text-muted-foreground">Cargando asados...</p>
           </div>
         ) : (
-          <AsadoList asados={asados} cuts={cuts} guests={guests} onRefresh={handleRefresh} />
+          <AsadoList
+            asados={asados}
+            cuts={cuts}
+            guests={guests}
+            onRefresh={handleRefresh}
+          />
         )}
       </div>
     </main>

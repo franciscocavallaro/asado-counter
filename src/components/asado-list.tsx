@@ -37,4 +37,3 @@ export function AsadoList({ asados, cuts, guests, onRefresh }: AsadoListProps) {
     </div>
   );
 }
-

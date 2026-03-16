@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WrappedStatsDisplay } from "@/components/wrapped-stats";
 import { getWrappedStats } from "@/lib/actions";
@@ -66,6 +66,13 @@ export default function WrappedPage() {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          <Link href="/logout">
+            <Button variant="ghost" className="gap-2 px-2 sm:px-4" size="sm">
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Salir</span>
+            </Button>
+          </Link>
         </div>
 
         {/* Content */}
@@ -84,4 +91,3 @@ export default function WrappedPage() {
     </main>
   );
 }
-

@@ -1,12 +1,15 @@
 # Asado Counter 🔥
 
-A minimalist web app to track your asados (Argentinian BBQs). Record meat cuts, weights, guests, and ratings for each asado. At the end of the year, see your "Asado Wrapped" with statistics!
+A minimalist web app to track your asados (Argentinian BBQs). Record meat cuts, weights, guests, and collect ratings through an in-app public voting page for each asado. At the end of the year, see your "Asado Wrapped" with statistics!
 
 ## Features
 
-- 📅 Register asados with date and rating (1-10)
+- 📅 Register asados with date and details
 - 🥩 Track meat cuts with weights (auto-complete from history)
 - 👥 Record guests who attended (auto-complete from history)
+- 🗳️ Public vote page per asado (`/vote/:asadoId`)
+- ⭐ Live rating average from votes
+- 🔒 Protected admin pages with password login
 - 📊 Year-end wrapped with stats:
   - Total kg of meat
   - Total asados
@@ -39,6 +42,8 @@ npm install
 3. If your project is already running, also execute:
    - `migration-add-title.sql`
    - `migration-add-location.sql`
+   - `migration-add-asado-votes.sql`
+   - `migration-make-rating-nullable.sql`
 4. Go to Settings → API and copy your Project URL and anon key
 
 ### 3. Configure environment variables
@@ -52,7 +57,10 @@ Edit `.env.local` with your Supabase credentials:
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+ADMIN_ACCESS_PASSWORD=your_admin_password
 ```
+
+If `ADMIN_ACCESS_PASSWORD` is empty, admin protection is disabled.
 
 ### 4. Run the development server
 

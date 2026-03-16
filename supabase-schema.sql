@@ -23,7 +23,7 @@ CREATE TABLE asados (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     date DATE NOT NULL,
     title TEXT,
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 10),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 10),
     location TEXT NOT NULL DEFAULT 'Cavallaro''s Residence',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -46,11 +46,20 @@ CREATE TABLE asado_guests (
     UNIQUE(asado_id, guest_id)
 );
 
+-- Asado votes table (public voting form answers)
+CREATE TABLE asado_votes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    asado_id UUID NOT NULL REFERENCES asados(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL CHECK (score >= 1 AND score <= 10),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Create indexes for better query performance
 CREATE INDEX idx_asado_cuts_asado_id ON asado_cuts(asado_id);
 CREATE INDEX idx_asado_cuts_cut_id ON asado_cuts(cut_id);
 CREATE INDEX idx_asado_guests_asado_id ON asado_guests(asado_id);
 CREATE INDEX idx_asado_guests_guest_id ON asado_guests(guest_id);
+CREATE INDEX idx_asado_votes_asado_id ON asado_votes(asado_id);
 CREATE INDEX idx_asados_date ON asados(date);
 
 -- Disable RLS for simplicity (no auth)
@@ -59,6 +68,7 @@ ALTER TABLE guests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asados ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asado_cuts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE asado_guests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE asado_votes ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations (no auth)
 CREATE POLICY "Allow all operations on cuts" ON cuts FOR ALL USING (true) WITH CHECK (true);
@@ -66,3 +76,4 @@ CREATE POLICY "Allow all operations on guests" ON guests FOR ALL USING (true) WI
 CREATE POLICY "Allow all operations on asados" ON asados FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on asado_cuts" ON asado_cuts FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on asado_guests" ON asado_guests FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on asado_votes" ON asado_votes FOR ALL USING (true) WITH CHECK (true);

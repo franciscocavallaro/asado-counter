@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import {
   Dialog,
   DialogContent,
@@ -65,7 +64,6 @@ export function AsadoForm({
       const nextDate = new Date(`${asado.date}T12:00:00`);
       setDate(!Number.isNaN(nextDate.getTime()) ? nextDate : new Date());
       setTitle(asado.title || "");
-      setRating(asado.rating);
       setLocation(asado.location || "Cavallaro's Residence");
       const cuts = asado.asado_cuts.length > 0
         ? asado.asado_cuts.map((ac) => ({
@@ -96,7 +94,6 @@ export function AsadoForm({
     initialDate
   );
   const [title, setTitle] = React.useState(asado?.title || "");
-  const [rating, setRating] = React.useState(asado?.rating || 7);
   const [location, setLocation] = React.useState(asado?.location || "Cavallaro's Residence");
   const [cutInputs, setCutInputs] = React.useState<CutInput[]>(
     asado && asado.asado_cuts.length > 0
@@ -120,7 +117,6 @@ export function AsadoForm({
     if (!asado) {
       setDate(new Date());
       setTitle("");
-      setRating(7);
       setLocation("Cavallaro's Residence");
       setCutInputs([{ name: "", weight_kg: 0 }]);
       setWeightInputs({});
@@ -200,7 +196,6 @@ export function AsadoForm({
         await updateAsado(asado.id, {
           date: date.toISOString(),
           title: title.trim() || undefined,
-          rating,
           location: location.trim() || "Cavallaro's Residence",
           cuts: validCuts,
           guests: validGuests,
@@ -209,7 +204,6 @@ export function AsadoForm({
         await createAsado({
           date: date.toISOString(),
           title: title.trim() || undefined,
-          rating,
           location: location.trim() || "Cavallaro's Residence",
           cuts: validCuts,
           guests: validGuests,
@@ -274,8 +268,8 @@ export function AsadoForm({
             />
           </div>
 
-          {/* Date and Rating Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-4">
+          {/* Date */}
+          <div className="grid grid-cols-1 gap-4 sm:gap-4">
             <div className="space-y-1.5 sm:space-y-2">
               <Label className="text-sm sm:text-base">Fecha</Label>
               <Popover>
@@ -301,20 +295,6 @@ export function AsadoForm({
                   />
                 </PopoverContent>
               </Popover>
-            </div>
-
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-sm sm:text-base">Puntuación: {rating}/10</Label>
-              <div className="pt-1.5 sm:pt-2">
-                <Slider
-                  value={[rating]}
-                  onValueChange={([v]) => setRating(v)}
-                  min={1}
-                  max={10}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import type {
   Asado,
   AsadoWithRelations,
+  AsadoVote,
   Cut,
   Guest,
   AsadoFormData,
@@ -94,6 +95,9 @@ export async function getAsados(): Promise<AsadoWithRelations[]> {
       asado_guests (
         *,
         guest:guests (*)
+      ),
+      asado_votes (
+        *
       )
     `
     )
@@ -111,7 +115,7 @@ export async function createAsado(formData: AsadoFormData): Promise<Asado> {
     .insert({
       date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
-      rating: formData.rating,
+      rating: null,
       location: formData.location?.trim() || null,
     })
     .select()
@@ -154,7 +158,6 @@ export async function updateAsado(
     .update({
       date: new Date(formData.date).toISOString().split("T")[0],
       title: formData.title?.trim() || null,
-      rating: formData.rating,
       location: formData.location?.trim() || null,
     })
     .eq("id", id)
@@ -207,6 +210,35 @@ export async function deleteAsado(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// Get one asado for voting page
+export async function getAsadoForVoting(id: string): Promise<Asado | null> {
+  const { data, error } = await supabase
+    .from("asados")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return null;
+  return data;
+}
+
+// Submit one vote (1-10)
+export async function submitAsadoVote(asadoId: string, score: number): Promise<AsadoVote> {
+  const safeScore = Math.max(1, Math.min(10, Math.round(score)));
+
+  const { data, error } = await supabase
+    .from("asado_votes")
+    .insert({
+      asado_id: asadoId,
+      score: safeScore,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
 // Get wrapped statistics
 export async function getWrappedStats(year?: number): Promise<WrappedStats> {
   const currentYear = year || new Date().getFullYear();
@@ -226,6 +258,9 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
       asado_guests (
         *,
         guest:guests (*)
+      ),
+      asado_votes (
+        *
       )
     `
     )
@@ -272,9 +307,29 @@ export async function getWrappedStats(year?: number): Promise<WrappedStats> {
     }
   }
 
-  // Calculate average rating
-  const averageRating =
-    asados.reduce((sum, a) => sum + a.rating, 0) / asados.length;
+  // Calculate average rating using in-app votes per asado when available,
+  // and fallback to legacy stored rating for asados without votes.
+  let ratingSum = 0;
+  let ratedAsados = 0;
+
+  for (const asado of asados) {
+    const votes = (asado.asado_votes || []) as { score: number }[];
+    if (votes.length > 0) {
+      const voteAverage =
+        votes.reduce((sum: number, vote: { score: number }) => sum + vote.score, 0) /
+        votes.length;
+      ratingSum += voteAverage;
+      ratedAsados += 1;
+      continue;
+    }
+
+    if (typeof asado.rating === "number") {
+      ratingSum += asado.rating;
+      ratedAsados += 1;
+    }
+  }
+
+  const averageRating = ratedAsados > 0 ? ratingSum / ratedAsados : 0;
 
   // Sort rankings
   const cutRanking = Object.entries(cutStats)
