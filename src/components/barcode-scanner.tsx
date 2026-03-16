@@ -41,6 +41,17 @@ export function BarcodeScanner({
     return "Error desconocido";
   }, []);
 
+  const isScannerRelatedError = React.useCallback((message: string): boolean => {
+    const normalized = message.toLowerCase();
+    return (
+      normalized.includes("html5-qrcode") ||
+      normalized.includes("barcode") ||
+      normalized.includes("scanner") ||
+      normalized.includes("removechild") ||
+      normalized.includes("insertbefore")
+    );
+  }, []);
+
   const stopScanning = React.useCallback(async () => {
     if (!scannerInstanceRef.current) {
       return;
@@ -49,11 +60,13 @@ export function BarcodeScanner({
     const scanner = scannerInstanceRef.current;
     scannerInstanceRef.current = null;
     
-    // Solo llamar a stop(), NO a clear().
-    // clear() intenta limpiar el DOM y causa removeChild cuando React ya lo hizo.
-    await scanner.stop().catch(() => {
-      // Ignorar errores de stop silenciosamente.
-    });
+    try {
+      // Solo llamar a stop(), NO a clear().
+      // clear() intenta limpiar el DOM y puede romper el DOM en Safari/iOS.
+      await scanner.stop();
+    } catch (stopError) {
+      console.warn("Scanner stop failed (ignored):", stopError);
+    }
     
     if (isMountedRef.current) {
       setIsScanning(false);
@@ -62,7 +75,7 @@ export function BarcodeScanner({
 
   const handleScanSuccess = React.useCallback((barcode: string) => {
     // Detener el escáner
-    stopScanning();
+    void stopScanning();
     
     // Llamar al callback con el código escaneado
     onScan(barcode);
@@ -196,6 +209,39 @@ export function BarcodeScanner({
       return;
     }
 
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const rejectionMessage = getErrorMessage(event.reason);
+      if (!isScannerRelatedError(rejectionMessage)) {
+        return;
+      }
+
+      event.preventDefault();
+      console.error("Unhandled scanner rejection captured:", event.reason);
+      if (isMountedRef.current) {
+        setError("El escáner falló al iniciar en este dispositivo. Probá cerrar y abrir nuevamente.");
+        setIsScanning(false);
+      }
+      void stopScanning();
+    };
+
+    const handleWindowError = (event: ErrorEvent) => {
+      const runtimeMessage = event.message || getErrorMessage(event.error);
+      if (!isScannerRelatedError(runtimeMessage)) {
+        return;
+      }
+
+      event.preventDefault();
+      console.error("Window scanner error captured:", event.error || event.message);
+      if (isMountedRef.current) {
+        setError("El escáner encontró un error interno. Intentá de nuevo.");
+        setIsScanning(false);
+      }
+      void stopScanning();
+    };
+
+    window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    window.addEventListener("error", handleWindowError);
+
     // Cargar html5-qrcode dinámicamente
     const loadScanner = async () => {
       try {
@@ -266,12 +312,14 @@ export function BarcodeScanner({
 
     return () => {
       isMountedRef.current = false;
+      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener("error", handleWindowError);
       stopScanning();
     };
-  }, [getErrorMessage, open, startScanning, stopScanning]);
+  }, [getErrorMessage, isScannerRelatedError, open, startScanning, stopScanning]);
 
   const handleClose = () => {
-    stopScanning();
+    void stopScanning();
     onClose();
   };
 
