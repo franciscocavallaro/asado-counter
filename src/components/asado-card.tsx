@@ -33,7 +33,15 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
   const [editDialogOpen, setEditDialogOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
 
-  const totalWeight = asado.asado_cuts.reduce(
+  const asadoCuts = Array.isArray(asado.asado_cuts) ? asado.asado_cuts : [];
+  const asadoGuests = Array.isArray(asado.asado_guests) ? asado.asado_guests : [];
+  const asadoDate = new Date(`${asado.date}T12:00:00`);
+  const hasValidDate = !Number.isNaN(asadoDate.getTime());
+  const displayDate = hasValidDate
+    ? format(asadoDate, "d 'de' MMM, yyyy", { locale: es })
+    : "Fecha inválida";
+
+  const totalWeight = asadoCuts.reduce(
     (sum, ac) => sum + Number(ac.weight_kg),
     0
   );
@@ -76,12 +84,12 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
                   {asado.title}
                 </h3>
                 <p className="text-xs sm:text-sm text-muted-foreground font-mono">
-                  {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
+                  {displayDate}
                 </p>
               </>
             ) : (
               <p className="text-base sm:text-lg font-semibold font-mono">
-                {format(new Date(asado.date + 'T12:00:00'), "d 'de' MMM, yyyy", { locale: es })}
+                {displayDate}
               </p>
             )}
             <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
@@ -114,7 +122,7 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
             </span>
           </div>
           <div className="flex flex-wrap gap-1 sm:gap-1.5">
-            {asado.asado_cuts.map((ac) => (
+            {asadoCuts.map((ac) => (
               <Badge
                 key={ac.id}
                 variant="secondary"
@@ -130,16 +138,16 @@ export function AsadoCard({ asado, cuts, guests, onDelete, onUpdate }: AsadoCard
         </div>
 
         {/* Guests */}
-        {asado.asado_guests.length > 0 && (
+        {asadoGuests.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
               <Users className="h-4 w-4" />
               <span>
-                Invitados ({asado.asado_guests.length})
+                Invitados ({asadoGuests.length})
               </span>
             </div>
             <div className="flex flex-wrap gap-1 sm:gap-1.5">
-              {asado.asado_guests.map((ag) => (
+              {asadoGuests.map((ag) => (
                 <Badge
                   key={ag.id}
                   variant="outline"

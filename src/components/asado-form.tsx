@@ -61,6 +61,10 @@ export function AsadoForm({
   onOpenChange: controlledOnOpenChange,
   trigger
 }: AsadoFormProps) {
+  const asadoDate = asado?.date ? new Date(`${asado.date}T12:00:00`) : undefined;
+  const initialDate =
+    asadoDate && !Number.isNaN(asadoDate.getTime()) ? asadoDate : new Date();
+
   const [internalOpen, setInternalOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [scannerOpen, setScannerOpen] = React.useState(false);
@@ -74,7 +78,8 @@ export function AsadoForm({
   // Initialize form with asado data if editing
   React.useEffect(() => {
     if (asado && open) {
-      setDate(new Date(asado.date + 'T12:00:00'));
+      const nextDate = new Date(`${asado.date}T12:00:00`);
+      setDate(!Number.isNaN(nextDate.getTime()) ? nextDate : new Date());
       setTitle(asado.title || "");
       setRating(asado.rating);
       setLocation(asado.location || "Cavallaro's Residence");
@@ -104,7 +109,7 @@ export function AsadoForm({
   }, [asado, open]);
 
   const [date, setDate] = React.useState<Date | undefined>(
-    asado ? new Date(asado.date + 'T12:00:00') : new Date()
+    initialDate
   );
   const [title, setTitle] = React.useState(asado?.title || "");
   const [rating, setRating] = React.useState(asado?.rating || 7);
